@@ -1,4 +1,7 @@
 [![Build Status](https://travis-ci.org/arowM/heterocephalus.svg?branch=master)](https://travis-ci.org/arowM/heterocephalus)
+[![Hackage](https://img.shields.io/hackage/v/heterocephalus.svg)](https://hackage.haskell.org/package/heterocephalus)
+[![Stackage LTS](http://stackage.org/package/heterocephalus/badge/lts)](http://stackage.org/lts/package/heterocephalus)
+[![Stackage Nightly](http://stackage.org/package/heterocephalus/badge/nightly)](http://stackage.org/nightly/package/heterocephalus)
 
 ![hetero-mini](https://cloud.githubusercontent.com/assets/1481749/20267445/2a9da33e-aabe-11e6-8aa7-88e36f0a8d5d.jpg)
 
