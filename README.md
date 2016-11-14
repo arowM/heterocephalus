@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/arowM/heterocephalus.svg?branch=master)](https://travis-ci.org/arowM/heterocephalus)
 
+![hetero-mini](https://cloud.githubusercontent.com/assets/1481749/20267445/2a9da33e-aabe-11e6-8aa7-88e36f0a8d5d.jpg)
+
 # Heterocephalus template engine
 
 A flexible and type safe template engine for Haskell.
