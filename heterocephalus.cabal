@@ -1,12 +1,12 @@
 name:                heterocephalus
 version:             0.1.0.0
-synopsis:            Initial project template from stack
+synopsis:            A flexible and type safe template engine for Haskell.
 description:         Please see README.md
-homepage:            https://github.com/githubuser/heterocephalus#readme
-license:             BSD3
+homepage:            https://github.com/arowM/heterocephalus#readme
+license:             MIT
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
+author:              Kadzuya Okamoto
+maintainer:          arow.okamoto+github@gmail.com
 copyright:           2016 Kadzuya Okamoto
 category:            Web
 build-type:          Simple
@@ -39,4 +39,4 @@ test-suite heterocephalus-test
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/heterocephalus
+  location: https://github.com/arowM/heterocephalus
