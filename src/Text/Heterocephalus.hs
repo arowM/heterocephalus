@@ -1,10 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Text.Heterocephalus
-    -- * Core functions
-  ( compile
+  (
+  -- * Core functions
+    compile
   , compileFile
-   -- * low-level
+
+  -- * low-level
   , compileFromString
   ) where
 
@@ -24,10 +26,24 @@ import Text.Shakespeare.Base
 
 import Text.Heterocephalus.Parse (parseDoc)
 
--- | Heterocephalus quasi-quoter.
+{- $setup
+  >>> :set -XTemplateHaskell -XQuasiQuotes
+  >>> import Text.Blaze.Html.Renderer.String
+-}
+
+{-| Heterocephalus quasi-quoter.
+
+  >>> renderHtml (let as = ["a", "b"] in [compile|sample %{ forall a <- as }key: #{a}, %{ endforall }|] "")
+  "sample key: a, key: b, "
+
+  >>> renderHtml (let num=2 in [compile|#{num} is %{ if even num }even number.%{ else }odd number.%{ endif }|] "")
+  "2 is even number."
+ -}
 compile :: QuasiQuoter
 compile = compileWithSettings hamletRules defaultHamletSettings
 
+{-| Compile a template file.
+-}
 compileFile :: FilePath -> Q Exp
 compileFile = compileFileWithSettings hamletRules defaultHamletSettings
 
