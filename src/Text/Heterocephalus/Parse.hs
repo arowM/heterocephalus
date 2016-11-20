@@ -136,7 +136,12 @@ control = controlHash <|> controlPercent <|> controlReg
     controlReg = (NoControl . ContentRaw) <$> many (noneOf "#%")
 
 parsePercent :: UserParser () (Either String Control)
-parsePercent = parseControl '%'
+parsePercent = do
+  a <- parseControl '%'
+  optional eol
+  return a
+ where
+  eol = (char '\n' >> return ()) <|> (string "\r\n" >> return ())
 
 parseControl :: Char -> UserParser () (Either String Control)
 parseControl c = do
