@@ -44,7 +44,7 @@ docFromString s =
 
 parseDoc :: String -> Result [Doc]
 parseDoc s = do
-  controls <- concat <$> mapM parseLineControl (lines s)
+  controls <- parseLineControl s
   return $ controlsToDocs controls
 
 controlsToDocs :: [Control] -> [Doc]
@@ -133,7 +133,7 @@ control = controlHash <|> controlPercent <|> controlReg
         case x of
           Left str -> ContentRaw str
           Right deref -> ContentVar deref
-    controlReg = (NoControl . ContentRaw) <$> many (noneOf "#%^\r\n")
+    controlReg = (NoControl . ContentRaw) <$> many (noneOf "#%")
 
 parsePercent :: UserParser () (Either String Control)
 parsePercent = parseControl '%'
