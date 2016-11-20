@@ -3,10 +3,15 @@
 module Text.Heterocephalus
   (
   -- * Core functions
-    compile
-  , compileFile
+    compileText
+  , compileTextFile
+  , compileHtml
+  , compileHtmlFile
 
   -- * low-level
+  , HeterocephalusSetting(escapeExp)
+  , compile
+  , compileFile
   , compileFromString
   ) where
 
@@ -17,6 +22,7 @@ import Data.Text (Text, pack)
 import qualified Data.Text.Lazy as TL
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax hiding (Module)
+import Text.Blaze (preEscapedToMarkup)
 import Text.Blaze.Html (toHtml)
 import Text.Blaze.Internal (preEscapedText)
 import Text.Hamlet
@@ -27,21 +33,57 @@ import Text.Heterocephalus.Parse (Doc(..), Content(..), parseDoc)
 
 {- $setup
   >>> :set -XTemplateHaskell -XQuasiQuotes
-  >>> import Text.Blaze.Html.Renderer.String
+  >>> import Text.Blaze.Renderer.String
 -}
 
 {-| Heterocephalus quasi-quoter.
+  This function DOES NOT escape template variables.
+  To render the compiled file, use @Text.Blaze.Renderer.*.renderMarkup@.
 
-  >>> renderHtml (let as = ["a", "b"] in [compile|sample %{ forall a <- as }key: #{a}, %{ endforall }|] "")
-  "sample key: a, key: b, "
+  >>> renderMarkup (let as = ["<a>", "b"] in [compileText|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
+  "sample key: <a>, key: b, "
 
-  >>> renderHtml (let num=2 in [compile|#{num} is %{ if even num }even number.%{ else }odd number.%{ endif }|] "")
+  >>> renderMarkup (let num=2 in [compileText|#{num} is %{ if even num }even number.%{ else }odd number.%{ endif }|])
   "2 is even number."
  -}
-compile :: QuasiQuoter
-compile =
+compileText :: QuasiQuoter
+compileText = compile textSetting
+
+{-| Heterocephalus quasi-quoter for Html.
+  Same as 'compileText' but this function do escape template variables for Html.
+
+  >>> renderMarkup (let as = ["<a>", "b"] in [compileHtml|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
+  "sample key: &lt;a&gt;, key: b, "
+ -}
+compileHtml :: QuasiQuoter
+compileHtml = compile htmlSetting
+
+{-| Heterocephalus quasi-quoter.
+  Same as 'compileText' but this function read template literal from an external file.
+
+  >>> putStr $ renderMarkup (let as = ["<a>", "b"] in $(compileTextFile "templates/sample.txt"))
+  sample
+  key: <a>,
+  key: b,
+ -}
+compileTextFile :: FilePath -> Q Exp
+compileTextFile = compileFile textSetting
+
+{-| Heterocephalus quasi-quoter.
+  Same as 'compileTextFile' but escapes template variables for Html.
+
+  >>> putStr $ renderMarkup (let as = ["<a>", "b"] in $(compileHtmlFile "templates/sample.txt"))
+  sample
+  key: &lt;a&gt;,
+  key: b,
+ -}
+compileHtmlFile :: FilePath -> Q Exp
+compileHtmlFile = compileFile htmlSetting
+
+compile :: HeterocephalusSetting -> QuasiQuoter
+compile set =
   QuasiQuoter
-  { quoteExp = compileFromString
+  { quoteExp = compileFromString set
   , quotePat = error "not used"
   , quoteType = error "not used"
   , quoteDec = error "not used"
@@ -49,15 +91,15 @@ compile =
 
 {-| Compile a template file.
 -}
-compileFile :: FilePath -> Q Exp
-compileFile fp = do
+compileFile :: HeterocephalusSetting -> FilePath -> Q Exp
+compileFile set fp = do
   qAddDependentFile fp
   contents <- fmap TL.unpack $ qRunIO $ readUtf8File fp
-  compileFromString contents
+  compileFromString set contents
 
-compileFromString :: String -> Q Exp
-compileFromString s =
-  docsToExp [] $ docFromString s
+compileFromString :: HeterocephalusSetting -> String -> Q Exp
+compileFromString set s =
+  docsToExp set [] $ docFromString s
 
 docFromString :: String -> [Doc]
 docFromString s =
@@ -65,35 +107,53 @@ docFromString s =
     Error s' -> error s'
     Ok d -> d
 
+data HeterocephalusSetting = HeterocephalusSetting
+  { escapeExp :: Q Exp
+  }
+
+{-| A setting that escapes template variables for Html
+ -}
+htmlSetting :: HeterocephalusSetting
+htmlSetting = HeterocephalusSetting
+  { escapeExp = [|toHtml|]
+  }
+
+{-| A setting that DOES NOT escape template variables
+ -}
+textSetting :: HeterocephalusSetting
+textSetting = HeterocephalusSetting
+  { escapeExp = [|preEscapedToMarkup|]
+  }
+
 -- ==============================================
 --  Helper functions
 -- ==============================================
 
-docsToExp :: Scope -> [Doc] -> Q Exp
-docsToExp scope docs = do
-  exps <- mapM (docToExp scope) docs
+docsToExp :: HeterocephalusSetting -> Scope -> [Doc] -> Q Exp
+docsToExp set scope docs = do
+  exps <- mapM (docToExp set scope) docs
   case exps of
     [] -> [|return ()|]
     [x] -> return x
     _ -> return $ DoE $ map NoBindS exps
 
 -- TODO What's scope?
-docToExp :: Scope -> Doc -> Q Exp
-docToExp scope (DocForall list idents inside) = do
+docToExp :: HeterocephalusSetting -> Scope -> Doc -> Q Exp
+docToExp set scope (DocForall list idents inside) = do
   let list' = derefToExp scope list
   (pat, extraScope) <- bindingPattern idents
   let scope' = extraScope ++ scope
   mh <- [|F.mapM_|]
-  inside' <- docsToExp scope' inside
+  inside' <- docsToExp set scope' inside
   let lam = LamE [pat] inside'
   return $ mh `AppE` lam `AppE` list'
-docToExp scope (DocCond conds final) = do
+docToExp set scope (DocCond conds final) = do
   conds' <- mapM go conds
   final' <-
     case final of
       Nothing -> [|Nothing|]
       Just f -> do
-        f' <- docsToExp scope f
+        f' <- docsToExp set scope f
         j <- [|Just|]
         return $ j `AppE` f'
   ch <- [|condH|]
@@ -102,20 +162,18 @@ docToExp scope (DocCond conds final) = do
     go :: (Deref, [Doc]) -> Q Exp
     go (d, docs) = do
       let d' = derefToExp ((specialOrIdent, VarE 'or) : scope) d
-      docs' <- docsToExp scope docs
+      docs' <- docsToExp set scope docs
       return $ TupE [d', docs']
-docToExp v (DocContent c) = contentToExp v c
+docToExp set v (DocContent c) = contentToExp set v c
 
-contentToExp :: Scope -> Content -> Q Exp
-contentToExp _ (ContentRaw s) = do
+contentToExp :: HeterocephalusSetting -> Scope -> Content -> Q Exp
+contentToExp _ _ (ContentRaw s) = do
   os <- [|preEscapedText . pack|]
   let s' = LitE $ StringL s
-  i <- [|id|]
-  return $ i `AppE` (os `AppE` s')
-contentToExp scope (ContentVar d) = do
-  str <- [|toHtml|]
-  i <- [|id|]
-  return $ i `AppE` (str `AppE` derefToExp scope d)
+  return $ os `AppE` s'
+contentToExp set scope (ContentVar d) = do
+  str <- escapeExp set
+  return $ str `AppE` derefToExp scope d
 
 -- ==============================================
 -- Codes from Text.Hamlet that is not exposed
