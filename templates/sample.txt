@@ -1,0 +1,4 @@
+sample
+%{ forall a <- as }
+key: #{a},
+%{ endforall }

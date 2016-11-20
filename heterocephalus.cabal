@@ -1,5 +1,5 @@
 name:                heterocephalus
-version:             0.1.0.0
+version:             1.0.0
 synopsis:            A flexible and type safe template engine for Haskell.
 description:         Please see README.md
 homepage:            https://github.com/arowM/heterocephalus#readme
