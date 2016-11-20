@@ -21,10 +21,9 @@ import Text.Blaze.Html (toHtml)
 import Text.Blaze.Internal (preEscapedText)
 import Text.Hamlet
 import Text.Hamlet.Parse
-       hiding (defaultHamletSettings, parseDoc, HamletSettings)
 import Text.Shakespeare.Base
 
-import Text.Heterocephalus.Parse (parseDoc)
+import Text.Heterocephalus.Parse (Doc(..), Content(..), parseDoc)
 
 {- $setup
   >>> :set -XTemplateHaskell -XQuasiQuotes
@@ -40,51 +39,87 @@ import Text.Heterocephalus.Parse (parseDoc)
   "2 is even number."
  -}
 compile :: QuasiQuoter
-compile = compileWithSettings hamletRules defaultHamletSettings
-
-{-| Compile a template file.
--}
-compileFile :: FilePath -> Q Exp
-compileFile = compileFileWithSettings hamletRules defaultHamletSettings
-
-compileWithSettings :: Q HamletRules -> HamletSettings -> QuasiQuoter
-compileWithSettings hr set =
+compile =
   QuasiQuoter
-  { quoteExp = compileFromString hr set
+  { quoteExp = compileFromString
   , quotePat = error "not used"
   , quoteType = error "not used"
   , quoteDec = error "not used"
   }
 
-compileFileWithSettings :: Q HamletRules -> HamletSettings -> FilePath -> Q Exp
-compileFileWithSettings qhr set fp = do
+{-| Compile a template file.
+-}
+compileFile :: FilePath -> Q Exp
+compileFile fp = do
   qAddDependentFile fp
   contents <- fmap TL.unpack $ qRunIO $ readUtf8File fp
-  compileFromString qhr set contents
+  compileFromString contents
 
-compileFromString :: Q HamletRules -> HamletSettings -> String -> Q Exp
-compileFromString qhr set s = do
-  hr <- qhr
-  hrWithEnv hr $ \env -> docsToExp env hr [] $ docFromString set s
+compileFromString :: String -> Q Exp
+compileFromString s =
+  docsToExp [] $ docFromString s
 
-docFromString :: HamletSettings -> String -> [Doc]
-docFromString _ s =
+docFromString :: String -> [Doc]
+docFromString s =
   case parseDoc s of
     Error s' -> error s'
     Ok d -> d
 
-
 -- ==============================================
--- Codes from Text.Hamlet that is not exposed
+--  Helper functions
 -- ==============================================
 
-docsToExp :: Env -> HamletRules -> Scope -> [Doc] -> Q Exp
-docsToExp env hr scope docs = do
-  exps <- mapM (docToExp env hr scope) docs
+docsToExp :: Scope -> [Doc] -> Q Exp
+docsToExp scope docs = do
+  exps <- mapM (docToExp scope) docs
   case exps of
     [] -> [|return ()|]
     [x] -> return x
     _ -> return $ DoE $ map NoBindS exps
+
+-- TODO What's scope?
+docToExp :: Scope -> Doc -> Q Exp
+docToExp scope (DocForall list idents inside) = do
+  let list' = derefToExp scope list
+  (pat, extraScope) <- bindingPattern idents
+  let scope' = extraScope ++ scope
+  mh <- [|F.mapM_|]
+  inside' <- docsToExp scope' inside
+  let lam = LamE [pat] inside'
+  return $ mh `AppE` lam `AppE` list'
+docToExp scope (DocCond conds final) = do
+  conds' <- mapM go conds
+  final' <-
+    case final of
+      Nothing -> [|Nothing|]
+      Just f -> do
+        f' <- docsToExp scope f
+        j <- [|Just|]
+        return $ j `AppE` f'
+  ch <- [|condH|]
+  return $ ch `AppE` ListE conds' `AppE` final'
+  where
+    go :: (Deref, [Doc]) -> Q Exp
+    go (d, docs) = do
+      let d' = derefToExp ((specialOrIdent, VarE 'or) : scope) d
+      docs' <- docsToExp scope docs
+      return $ TupE [d', docs']
+docToExp v (DocContent c) = contentToExp v c
+
+contentToExp :: Scope -> Content -> Q Exp
+contentToExp _ (ContentRaw s) = do
+  os <- [|preEscapedText . pack|]
+  let s' = LitE $ StringL s
+  i <- [|id|]
+  return $ i `AppE` (os `AppE` s')
+contentToExp scope (ContentVar d) = do
+  str <- [|toHtml|]
+  i <- [|id|]
+  return $ i `AppE` (str `AppE` derefToExp scope d)
+
+-- ==============================================
+-- Codes from Text.Hamlet that is not exposed
+-- ==============================================
 
 unIdent :: Ident -> String
 unIdent (Ident s) = s
@@ -159,103 +194,6 @@ recordToFieldNames conStr
   TyConI (DataD _ _ _ _ cons _) <- reify typeName
   [fields] <- return [fields | RecC name fields <- cons, name == conName]
   return [fieldName | (fieldName, _, _) <- fields]
-
-docToExp :: Env -> HamletRules -> Scope -> Doc -> Q Exp
-docToExp env hr scope (DocForall list idents inside) = do
-  let list' = derefToExp scope list
-  (pat, extraScope) <- bindingPattern idents
-  let scope' = extraScope ++ scope
-  mh <- [|F.mapM_|]
-  inside' <- docsToExp env hr scope' inside
-  let lam = LamE [pat] inside'
-  return $ mh `AppE` lam `AppE` list'
-docToExp env hr scope (DocWith [] inside) = do
-  inside' <- docsToExp env hr scope inside
-  return $ inside'
-docToExp env hr scope (DocWith ((deref, idents):dis) inside) = do
-  let deref' = derefToExp scope deref
-  (pat, extraScope) <- bindingPattern idents
-  let scope' = extraScope ++ scope
-  inside' <- docToExp env hr scope' (DocWith dis inside)
-  let lam = LamE [pat] inside'
-  return $ lam `AppE` deref'
-docToExp env hr scope (DocMaybe val idents inside mno) = do
-  let val' = derefToExp scope val
-  (pat, extraScope) <- bindingPattern idents
-  let scope' = extraScope ++ scope
-  inside' <- docsToExp env hr scope' inside
-  let inside'' = LamE [pat] inside'
-  ninside' <-
-    case mno of
-      Nothing -> [|Nothing|]
-      Just no -> do
-        no' <- docsToExp env hr scope no
-        j <- [|Just|]
-        return $ j `AppE` no'
-  mh <- [|maybeH|]
-  return $ mh `AppE` val' `AppE` inside'' `AppE` ninside'
-docToExp env hr scope (DocCond conds final) = do
-  conds' <- mapM go conds
-  final' <-
-    case final of
-      Nothing -> [|Nothing|]
-      Just f -> do
-        f' <- docsToExp env hr scope f
-        j <- [|Just|]
-        return $ j `AppE` f'
-  ch <- [|condH|]
-  return $ ch `AppE` ListE conds' `AppE` final'
-  where
-    go :: (Deref, [Doc]) -> Q Exp
-    go (d, docs) = do
-      let d' = derefToExp ((specialOrIdent, VarE 'or) : scope) d
-      docs' <- docsToExp env hr scope docs
-      return $ TupE [d', docs']
-docToExp env hr scope (DocCase deref cases) = do
-  let exp_ = derefToExp scope deref
-  matches <- mapM toMatch cases
-  return $ CaseE exp_ matches
-  where
-    toMatch :: (Binding, [Doc]) -> Q Match
-    toMatch (idents, inside) = do
-      (pat, extraScope) <- bindingPattern idents
-      let scope' = extraScope ++ scope
-      insideExp <- docsToExp env hr scope' inside
-      return $ Match pat (NormalB insideExp) []
-docToExp env hr v (DocContent c) = contentToExp env hr v c
-
-contentToExp :: Env -> HamletRules -> Scope -> Content -> Q Exp
-contentToExp _ hr _ (ContentRaw s) = do
-  os <- [|preEscapedText . pack|]
-  let s' = LitE $ StringL s
-  return $ hrFromHtml hr `AppE` (os `AppE` s')
-contentToExp _ hr scope (ContentVar d) = do
-  str <- [|toHtml|]
-  return $ hrFromHtml hr `AppE` (str `AppE` derefToExp scope d)
-contentToExp env hr scope (ContentUrl hasParams d) =
-  case urlRender env of
-    Nothing -> error "URL interpolation used, but no URL renderer provided"
-    Just wrender ->
-      wrender $ \render -> do
-        let render' = return render
-        ou <-
-          if hasParams
-            then [|\(u, p) -> $(render') u p|]
-            else [|\u -> $(render') u []|]
-        let d' = derefToExp scope d
-        pet <- [|toHtml|]
-        return $ hrFromHtml hr `AppE` (pet `AppE` (ou `AppE` d'))
-contentToExp env hr scope (ContentEmbed d) = hrEmbed hr env $ derefToExp scope d
-contentToExp env hr scope (ContentMsg d) =
-  case msgRender env of
-    Nothing ->
-      error "Message interpolation used, but no message renderer provided"
-    Just wrender ->
-      wrender $ \render ->
-        return $ hrFromHtml hr `AppE` (render `AppE` derefToExp scope d)
-contentToExp _ hr scope (ContentAttrs d) = do
-  html <- [|attrsToHtml . toAttributes|]
-  return $ hrFromHtml hr `AppE` (html `AppE` derefToExp scope d)
 
 type QueryParameters = [(Text, Text)]
 

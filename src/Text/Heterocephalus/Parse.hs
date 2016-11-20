@@ -13,7 +13,7 @@ import Text.Parsec.Prim (Parsec)
 import Text.ParserCombinators.Parsec hiding (Line)
 import Text.Shakespeare.Base
 
-import Text.Hamlet.Parse hiding (parseDoc)
+import Text.Hamlet.Parse
 
 data Control
   = ControlForall Deref Binding
@@ -24,6 +24,15 @@ data Control
   | ControlEndIf
   | NoControl Content
   deriving (Show, Eq, Read, Data, Typeable)
+
+data Doc = DocForall Deref Binding [Doc]
+         | DocCond [(Deref, [Doc])] (Maybe [Doc])
+         | DocContent Content
+    deriving (Show, Eq, Read, Data, Typeable)
+
+data Content = ContentRaw String
+             | ContentVar Deref
+    deriving (Show, Eq, Read, Data, Typeable)
 
 type UserParser a = Parsec String a
 
@@ -111,7 +120,7 @@ lineControl :: UserParser () [Control]
 lineControl = manyTill control $ try eof >> return ()
 
 control :: UserParser () Control
-control = controlHash <|> controlCaret <|> controlPercent <|> controlReg
+control = controlHash <|> controlPercent <|> controlReg
   where
     controlPercent = do
       x <- parsePercent
@@ -124,12 +133,6 @@ control = controlHash <|> controlCaret <|> controlPercent <|> controlReg
         case x of
           Left str -> ContentRaw str
           Right deref -> ContentVar deref
-    controlCaret = do
-      x <- parseCaret
-      return . NoControl $
-        case x of
-          Left str -> ContentRaw str
-          Right deref -> ContentEmbed deref
     controlReg = (NoControl . ContentRaw) <$> many (noneOf "#%^\r\n")
 
 parsePercent :: UserParser () (Either String Control)
