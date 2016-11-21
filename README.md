@@ -7,7 +7,7 @@
 
 # Heterocephalus template engine
 
-A flexible and type safe template engine for Haskell.
+A type safe template engine for collaborating with front end development tools.
 
 Currently, this module uses lots of codes from [`hamlet`](http://hackage.haskell.org/package/shakespeare-2.0.11/docs/Text-Hamlet.html).
 
@@ -25,3 +25,33 @@ A [`haiji`](https://hackage.haskell.org/package/haiji) was only choice for the u
 
 This is the motivation of this module.
 The Heterocephalus template engine has feature like `haiji` but it does not take too long compile time.
+
+## Features
+
+Here are the features of this module.
+
+* __DO__ ensure that all interpolated variables are in scope
+
+* __DO__ ensure that all interpolated variables have proper types for the template
+
+* __DO__ expand the template literal on compile time
+
+* __DO__ provide you the way to `forall` and `if` in the template
+
+    `Text.Shakespeare.Text.text` only have a feature to embed variables but __DOES NOT__ have way to do this.
+
+* __DO NOT__ enforce template to obey the peculiar rule
+
+    Shakespeare templates basically enforces you the indent base peculiar style.
+    Though `Text.Shakespeare.Text.text` does not enforce you to do so, it has no `forall` and `if` statement.
+
+    This fact makes it impossible you to use Shakespeare with another template engine such as `pug` in front end side.
+    It is not suitable for recent rich front end tools.
+
+* __DO NOT__ take too long compile time
+
+    `haiji` is another awesome library it has much of features and compile time template expanding, but it takes too long compile time when used with stack (ghc >= 7.10).
+
+* __DO NOT__ provide convenient control statements
+
+    There are rich control statements such as importing external file in other Haskell template engines, but this module does not need them because this is supposed to be used with rich front end side template engine.
