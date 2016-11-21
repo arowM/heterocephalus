@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE CPP #-}
 
 module Text.Heterocephalus
   (
@@ -21,7 +22,11 @@ import Data.List (intercalate)
 import Data.Text (Text, pack)
 import qualified Data.Text.Lazy as TL
 import Language.Haskell.TH.Quote
+#if MIN_VERSION_template_haskell(2,9,0)
 import Language.Haskell.TH.Syntax hiding (Module)
+#else
+import Language.Haskell.TH.Syntax
+#endif
 import Text.Blaze (preEscapedToMarkup)
 import Text.Blaze.Html (toHtml)
 import Text.Blaze.Internal (preEscapedText)
@@ -93,7 +98,9 @@ compile set =
 -}
 compileFile :: HeterocephalusSetting -> FilePath -> Q Exp
 compileFile set fp = do
+#ifdef GHC_7_4
   qAddDependentFile fp
+#endif
   contents <- fmap TL.unpack $ qRunIO $ readUtf8File fp
   compileFromString set contents
 
@@ -248,8 +255,13 @@ recordToFieldNames conStr
   -- data constructor and not the type constructor if their names match.
  = do
   Just conName <- lookupValueName $ conToStr conStr
-  DataConI _ _ typeName <- reify conName
+#if MIN_VERSION_template_haskell(2,11,0)
+  DataConI _ _ typeName         <- reify conName
   TyConI (DataD _ _ _ _ cons _) <- reify typeName
+#else
+  DataConI _ _ typeName _     <- reify conName
+  TyConI (DataD _ _ _ cons _) <- reify typeName
+#endif
   [fields] <- return [fields | RecC name fields <- cons, name == conName]
   return [fieldName | (fieldName, _, _) <- fields]
 
