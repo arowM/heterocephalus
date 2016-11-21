@@ -1,7 +1,11 @@
 name:                heterocephalus
 version:             1.0.0
-synopsis:            A flexible and type safe template engine for Haskell.
-description:         Please see README.md
+synopsis:            A type safe template engine for collaborating with front end development tools
+description:
+    Recent front end developing tools are growing fast and have created the complicated ecosystem, and few front end developer want to use Shakespeare template instead of commonly used @node@ friendly engines such that @pug@, @slim@, @haml@, though Shakespeare template has great feature of compile time variable interpolation and type checking.
+
+    From this observation, Heterocephalus is developed for using with another feature rich template engine and only provides the way to interpolate server side variables into the precompiled template file with @forall@ and @if@ statement.
+
 homepage:            https://github.com/arowM/heterocephalus#readme
 license:             MIT
 license-file:        LICENSE
