@@ -1,5 +1,5 @@
 name:                heterocephalus
-version:             1.0.0
+version:             1.0.0.1
 synopsis:            A type safe template engine for collaborating with front end development tools
 description:
     Recent front end developing tools are growing fast and have created the complicated ecosystem, and few front end developer want to use Shakespeare template instead of commonly used @node@ friendly engines such that @pug@, @slim@, @haml@, though Shakespeare template has great feature of compile time variable interpolation and type checking.
