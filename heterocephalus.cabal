@@ -14,7 +14,7 @@ maintainer:          arow.okamoto+github@gmail.com
 copyright:           2016 Kadzuya Okamoto
 category:            Web
 build-type:          Simple
--- extra-source-files:
+extra-source-files:  templates
 cabal-version:       >=1.10
 
 library
