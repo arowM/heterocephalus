@@ -144,7 +144,6 @@ docsToExp set scope docs = do
     [x] -> return x
     _ -> return $ DoE $ map NoBindS exps
 
--- TODO What's scope?
 docToExp :: HeterocephalusSetting -> Scope -> Doc -> Q Exp
 docToExp set scope (DocForall list idents inside) = do
   let list' = derefToExp scope list
