@@ -6,6 +6,10 @@
 
 module Text.Heterocephalus.Parse where
 
+#if MIN_VERSION_base(4,9,0)
+#else
+import Control.Applicative ((<$>))
+#endif
 import Control.Monad
 import Data.Char (isUpper)
 import Data.Data
