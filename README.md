@@ -55,3 +55,29 @@ Here are the features of this module.
 * __DO NOT__ provide convenient control statements
 
     There are rich control statements such as importing external file in other Haskell template engines, but this module does not need them because this is supposed to be used with rich front end side template engine.
+
+## Control statements
+
+Only two type of control statements are provided.
+
+### Forall
+
+Sample.
+
+```
+%{ forall x <- xs }
+#{x}
+%{ endforall }
+```
+
+### If
+
+Sample.
+
+```
+%{ if even num }
+#{num} is even number.
+%{ else }
+#{num} is odd number.
+%{ endif }
+```
