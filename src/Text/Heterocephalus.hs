@@ -58,30 +58,9 @@ import Text.Heterocephalus.Parse (Doc(..), Content(..), parseDoc)
   >>> import Text.Blaze.Renderer.String
 -}
 
-{-| Heterocephalus quasi-quoter.
-  This function DOES NOT escape template variables.
+{-| A function to compile template file.
+  This function __DOES NOT__ escape template variables.
   To render the compiled file, use @Text.Blaze.Renderer.*.renderMarkup@.
-
-  >>> renderMarkup (let as = ["<a>", "b"] in [compileText|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
-  "sample key: <a>, key: b, "
-
-  >>> renderMarkup (let num=2 in [compileText|#{num} is %{ if even num }even number.%{ else }odd number.%{ endif }|])
-  "2 is even number."
- -}
-compileText :: QuasiQuoter
-compileText = compile textSetting
-
-{-| Heterocephalus quasi-quoter for Html.
-  Same as 'compileText' but this function do escape template variables for Html.
-
-  >>> renderMarkup (let as = ["<a>", "b"] in [compileHtml|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
-  "sample key: &lt;a&gt;, key: b, "
- -}
-compileHtml :: QuasiQuoter
-compileHtml = compile htmlSetting
-
-{-| Heterocephalus quasi-quoter.
-  Same as 'compileText' but this function read template literal from an external file.
 
   >>> putStr $ renderMarkup (let as = ["<a>", "b"] in $(compileTextFile "templates/sample.txt"))
   sample
@@ -91,8 +70,7 @@ compileHtml = compile htmlSetting
 compileTextFile :: FilePath -> Q Exp
 compileTextFile = compileFile textSetting
 
-{-| Heterocephalus quasi-quoter.
-  Same as 'compileText' but we can specify default scope.
+{-| Same as 'compileText' but we can specify default scope.
 
   >>> :set -XOverloadedStrings
   >>> :{
@@ -121,8 +99,7 @@ compileTextFile = compileFile textSetting
 compileTextFileWithDefault :: FilePath -> DefaultScope -> Q Exp
 compileTextFileWithDefault fp scope = compileFileWithDefault scope textSetting fp
 
-{-| Heterocephalus quasi-quoter.
-  Same as 'compileTextFile' but escapes template variables for Html.
+{-| Same as 'compileTextFile' but escapes template variables for Html.
 
   >>> putStr $ renderMarkup (let as = ["<a>", "b"] in $(compileHtmlFile "templates/sample.txt"))
   sample
@@ -132,8 +109,7 @@ compileTextFileWithDefault fp scope = compileFileWithDefault scope textSetting f
 compileHtmlFile :: FilePath -> Q Exp
 compileHtmlFile fp = compileHtmlFileWithDefault fp []
 
-{-| Heterocephalus quasi-quoter.
-  Same as 'compileHtmlFile' but we can specify default scope.
+{-| Same as 'compileHtmlFile' but we can specify default scope.
 
   >>> :set -XOverloadedStrings
   >>> :{
@@ -161,6 +137,28 @@ compileHtmlFile fp = compileHtmlFileWithDefault fp []
  -}
 compileHtmlFileWithDefault :: FilePath -> DefaultScope -> Q Exp
 compileHtmlFileWithDefault fp scope = compileFileWithDefault scope htmlSetting fp
+
+{-| Heterocephalus quasi-quoter.
+  This function DOES NOT escape template variables.
+  To render the compiled file, use @Text.Blaze.Renderer.*.renderMarkup@.
+
+  >>> renderMarkup (let as = ["<a>", "b"] in [compileText|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
+  "sample key: <a>, key: b, "
+
+  >>> renderMarkup (let num=2 in [compileText|#{num} is %{ if even num }even number.%{ else }odd number.%{ endif }|])
+  "2 is even number."
+ -}
+compileText :: QuasiQuoter
+compileText = compile textSetting
+
+{-| Heterocephalus quasi-quoter for Html.
+  Same as 'compileText' but this function do escape template variables for Html.
+
+  >>> renderMarkup (let as = ["<a>", "b"] in [compileHtml|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
+  "sample key: &lt;a&gt;, key: b, "
+ -}
+compileHtml :: QuasiQuoter
+compileHtml = compile htmlSetting
 
 compile :: HeterocephalusSetting -> QuasiQuoter
 compile = compileWithDefault []
