@@ -8,20 +8,20 @@ module Text.Heterocephalus
   -- * Core functions
     compileText
   , compileTextFile
-  , compileTextFile'
+  , compileTextFileWithDefault
   , compileHtml
   , compileHtmlFile
-  , compileHtmlFile'
+  , compileHtmlFileWithDefault
 
   -- * low-level
   , HeterocephalusSetting(escapeExp)
-  , Scope'
+  , DefaultScope
   , compile
-  , compile'
+  , compileWithDefault
   , compileFile
-  , compileFile'
+  , compileFileWithDefault
   , compileFromString
-  , compileFromString'
+  , compileFromStringWithDefault
   ) where
 
 #if MIN_VERSION_base(4,9,0)
@@ -96,7 +96,7 @@ compileTextFile = compileFile textSetting
   >>> :{
   >>> putStr $ renderMarkup (
   >>>   let as = ["<a>", "b"]
-  >>>   in $(compileTextFile' "templates/sample.txt"
+  >>>   in $(compileTextFileWithDefault "templates/sample.txt"
   >>>     [("as", [| ["foo", "bar"] |])]
   >>>   )
   >>> )
@@ -107,7 +107,7 @@ compileTextFile = compileFile textSetting
 
   >>> :{
   >>> putStr $ renderMarkup (
-  >>>   $(compileTextFile' "templates/sample.txt"
+  >>>   $(compileTextFileWithDefault "templates/sample.txt"
   >>>     [("as", [| ["foo", "bar"] |])]
   >>>   )
   >>> )
@@ -116,8 +116,8 @@ compileTextFile = compileFile textSetting
   key: foo,
   key: bar,
  -}
-compileTextFile' :: FilePath -> Scope' -> Q Exp
-compileTextFile' fp scope = compileFile' scope textSetting fp
+compileTextFileWithDefault :: FilePath -> DefaultScope -> Q Exp
+compileTextFileWithDefault fp scope = compileFileWithDefault scope textSetting fp
 
 {-| Heterocephalus quasi-quoter.
   Same as 'compileTextFile' but escapes template variables for Html.
@@ -128,7 +128,7 @@ compileTextFile' fp scope = compileFile' scope textSetting fp
   key: b,
  -}
 compileHtmlFile :: FilePath -> Q Exp
-compileHtmlFile fp = compileHtmlFile' fp []
+compileHtmlFile fp = compileHtmlFileWithDefault fp []
 
 {-| Heterocephalus quasi-quoter.
   Same as 'compileHtmlFile' but we can specify default scope.
@@ -137,7 +137,7 @@ compileHtmlFile fp = compileHtmlFile' fp []
   >>> :{
   >>> putStr $ renderMarkup (
   >>>   let as = ["<a>", "b"]
-  >>>   in $(compileHtmlFile' "templates/sample.txt"
+  >>>   in $(compileHtmlFileWithDefault "templates/sample.txt"
   >>>     [("as", [| ["foo", "bar"] |])]
   >>>   )
   >>> )
@@ -148,7 +148,7 @@ compileHtmlFile fp = compileHtmlFile' fp []
 
   >>> :{
   >>> putStr $ renderMarkup (
-  >>>   $(compileHtmlFile' "templates/sample.txt"
+  >>>   $(compileHtmlFileWithDefault "templates/sample.txt"
   >>>     [("as", [| ["foo", "bar"] |])]
   >>>   )
   >>> )
@@ -157,16 +157,16 @@ compileHtmlFile fp = compileHtmlFile' fp []
   key: foo,
   key: bar,
  -}
-compileHtmlFile' :: FilePath -> Scope' -> Q Exp
-compileHtmlFile' fp scope = compileFile' scope htmlSetting fp
+compileHtmlFileWithDefault :: FilePath -> DefaultScope -> Q Exp
+compileHtmlFileWithDefault fp scope = compileFileWithDefault scope htmlSetting fp
 
 compile :: HeterocephalusSetting -> QuasiQuoter
-compile = compile' []
+compile = compileWithDefault []
 
-compile' :: Scope' -> HeterocephalusSetting -> QuasiQuoter
-compile' scope set =
+compileWithDefault :: DefaultScope -> HeterocephalusSetting -> QuasiQuoter
+compileWithDefault scope set =
   QuasiQuoter
-  { quoteExp = compileFromString' scope set
+  { quoteExp = compileFromStringWithDefault scope set
   , quotePat = error "not used"
   , quoteType = error "not used"
   , quoteDec = error "not used"
@@ -175,23 +175,23 @@ compile' scope set =
 {-| Compile a template file.
 -}
 compileFile :: HeterocephalusSetting -> FilePath -> Q Exp
-compileFile = compileFile' []
+compileFile = compileFileWithDefault []
 
-{-| Same as 'compileFile' but get default 'Scope'.
+{-| Same as 'compileFile' but we can specify default scope.
 -}
-compileFile' :: Scope' -> HeterocephalusSetting -> FilePath -> Q Exp
-compileFile' scope' set fp = do
+compileFileWithDefault :: DefaultScope -> HeterocephalusSetting -> FilePath -> Q Exp
+compileFileWithDefault scope' set fp = do
 #ifdef GHC_7_4
   qAddDependentFile fp
 #endif
   contents <- fmap TL.unpack $ qRunIO $ readUtf8File fp
-  compileFromString' scope' set contents
+  compileFromStringWithDefault scope' set contents
 
 compileFromString :: HeterocephalusSetting -> String -> Q Exp
-compileFromString = compileFromString' []
+compileFromString = compileFromStringWithDefault []
 
-compileFromString' :: Scope' -> HeterocephalusSetting -> String -> Q Exp
-compileFromString' scope' set s = do
+compileFromStringWithDefault :: DefaultScope -> HeterocephalusSetting -> String -> Q Exp
+compileFromStringWithDefault scope' set s = do
   scope <-
     forM scope' $ \(ident, qexp) -> (ident, ) <$> overwriteScope ident qexp
   docsToExp set scope $ docFromString s
@@ -227,14 +227,14 @@ textSetting = HeterocephalusSetting
   { escapeExp = [|preEscapedToMarkup|]
   }
 
--- ==============================================
---  Helper functions
--- ==============================================
-
-type Scope' = [(Ident, Q Exp)]
+type DefaultScope = [(Ident, Q Exp)]
 
 instance IsString Ident where
   fromString = Ident
+
+-- ==============================================
+--  Helper functions
+-- ==============================================
 
 docsToExp :: HeterocephalusSetting -> Scope -> [Doc] -> Q Exp
 docsToExp set scope docs = do
