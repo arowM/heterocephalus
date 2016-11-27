@@ -56,6 +56,18 @@ Here are the features of this module.
 
     There are rich control statements such as importing external file in other Haskell template engines, but this module does not need them because this is supposed to be used with rich front end side template engine.
 
+## Usage
+
+You can compile external template file with four functions bellow.
+As the function name represents, each function provide following features.
+
+* `compileTextFile`: A basic function that embeds variables without escaping and without default values.
+* `compileTextFileWithDefault`: Same as `compileTextFile` but you can set default template values.
+* `compileHtmlFile`: Same as `compileTextFile` but all embeded variables are escaped for html.
+* `compileHtmlFileWithDefault`: Same as `compileHtmlFile` but you can set default template values.
+
+For more details, see [latest haddock document](https://www.stackage.org/haddock/nightly/heterocephalus/Text-Heterocephalus.html).
+
 ## Control statements
 
 Only two type of control statements are provided.
