@@ -60,7 +60,7 @@ import Text.Heterocephalus.Parse (Doc(..), Content(..), parseDoc)
 
 {-| A function to compile template file.
   This function __DOES NOT__ escape template variables.
-  To render the compiled file, use @Text.Blaze.Renderer.*.renderMarkup@.
+  To render the compiled file, use @'Text.Blaze.Renderer'.*.renderMarkup@.
 
   >>> putStr $ renderMarkup (let as = ["<a>", "b"] in $(compileTextFile "templates/sample.txt"))
   sample
@@ -140,7 +140,7 @@ compileHtmlFileWithDefault fp scope = compileFileWithDefault scope htmlSetting f
 
 {-| Heterocephalus quasi-quoter.
   This function DOES NOT escape template variables.
-  To render the compiled file, use @Text.Blaze.Renderer.*.renderMarkup@.
+  To render the compiled file, use @'Text.Blaze.Renderer'.*.renderMarkup@.
 
   >>> renderMarkup (let as = ["<a>", "b"] in [compileText|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
   "sample key: <a>, key: b, "
