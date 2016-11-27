@@ -6,12 +6,14 @@
 module Text.Heterocephalus
   (
   -- * Core functions
-    compileText
-  , compileTextFile
+    compileTextFile
   , compileTextFileWithDefault
-  , compileHtml
   , compileHtmlFile
   , compileHtmlFileWithDefault
+
+  -- * QuasiQuoters
+  , compileText
+  , compileHtml
 
   -- * low-level
   , HeterocephalusSetting(escapeExp)
