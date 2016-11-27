@@ -68,11 +68,62 @@ As the function name represents, each function provide following features.
 
 For more details, see [latest haddock document](https://www.stackage.org/haddock/nightly/heterocephalus/Text-Heterocephalus.html).
 
-## Control statements
+## Checking behaviours in `ghci`
+
+To check the behaviour, you can test in `ghci` as follows. Note that `compileText` and `compileHtml` are used for checking syntaxes.
+
+```haskell
+$ stack install heterocephalus  # Only first time
+$ stack repl --no-build --no-load
+Prelude> :m Text.Heterocephalus Text.Blaze.Renderer.String
+Prelude> :set -XTemplateHaskell -XQuasiQuotes
+Prelude> let a = 34; b = "<script>"; in renderMarkup [compileText|foo #{a} #{b}|]
+"foo 34 <script>"
+Prelude> let a = 34; b = "<script>"; in renderMarkup [compileHtml|foo #{a} #{b}|]
+"foo 34 &lt;script&gt;"
+```
+
+## Syntax
+
+This module provide two major syntaxes for template file; variable interpolation and control statements.
+
+### Variable interpolation
+
+You can embed Haskell variable to the template file.
+As follows, a statement surrounded by `#{` and `}` is expanded on compile time, and injected on run time.
+
+#### Basic usage
+
+All of followings are correct syntax.
+Assumes that you have already declared the `var` variable in Haskell program and it is in scope.
+
+```text
+#{ var }
+#{var}
+#{  var}
+#{var  }
+#{ var  }
+```
+
+The variable we can embed must be an instance of `Text.Blaze.ToMarkup`.
+
+#### Advanced usage
+
+You can use functions and data constructors as well.
+
+```text
+#{ even num }
+#{ num + 3 }
+#{ take 3 str }
+#{ maybe "" id (Just b) }
+```
+
+### Control statements
 
 Only two type of control statements are provided.
+Rich control statements are not required in our use case of using with front end tools.
 
-### Forall
+#### Forall
 
 Sample.
 
@@ -80,9 +131,13 @@ Sample.
 %{ forall x <- xs }
 #{x}
 %{ endforall }
+
+%{ forall (k,v) <- kvs }
+#{k}: #{v}
+%{ endforall }
 ```
 
-### If
+#### If
 
 Sample.
 
