@@ -11,6 +11,12 @@ A type safe template engine for collaborating with front end development tools.
 
 Currently, this module uses lots of codes from [`hamlet`](http://hackage.haskell.org/package/shakespeare-2.0.11/docs/Text-Hamlet.html).
 
+* [Who should use this?](#who-should-use-this)
+* [Features](#features)
+* [Usage](#usage)
+* [Checking behaviours in `ghci`](#checking-behaviours-in-ghci)
+* [Syntax](#syntax)
+
 ## Who should use this?
 
 If you are planning to use Haskell with recent web front-end tools like gulp, webpack, npm,..., this library helps you!
