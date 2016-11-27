@@ -13,9 +13,11 @@ install:
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
   - stack --version
   - stack setup --no-terminal
+  - stack setup --no-terminal --resolver lts-2
 
 script:
-  - stack test
+  - stack test --pedantic
+  - stack test --pedantic --stack-yaml stack-lts-2.yaml
 
 # Caching so the next build will be fast too.
 cache:
