@@ -9,7 +9,7 @@
 
 A type safe template engine for collaborating with front end development tools.
 
-Currently, this module uses lots of codes from [`hamlet`](http://hackage.haskell.org/package/shakespeare-2.0.11/docs/Text-Hamlet.html).
+Any PR about documents are welcomed because main author of this library is not an English native.
 
 * [Who should use this?](#who-should-use-this)
 * [Features](#features)
