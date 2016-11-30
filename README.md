@@ -34,7 +34,7 @@ The Heterocephalus template engine has feature like `haiji` but it does not take
 
 ## Features
 
-Here are the features of this module.
+Here are the main features of this module.
 
 * __DO__ ensure that all interpolated variables are in scope
 
