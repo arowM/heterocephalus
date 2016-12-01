@@ -9,7 +9,7 @@
 
 A type safe template engine for collaborating with front end development tools.
 
-Any PR about documents are welcomed because main author of this library is not an English native.
+Any PR even if about documents are welcome because main author of this library is not an English native.
 
 * [Who should use this?](#who-should-use-this)
 * [Features](#features)
