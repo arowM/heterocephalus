@@ -23,7 +23,6 @@ data Control
   = ControlForall Deref Binding
   | ControlEndForall
   | ControlIf Deref
-  | ControlElseIf Deref
   | ControlElse
   | ControlEndIf
   | NoControl Content
@@ -163,8 +162,7 @@ parseControl c = do
 
 parseControl' :: UserParser () Control
 parseControl' =
-  try parseForall <|> try parseEndForall <|> try parseIf <|> try parseElseIf <|>
-  try parseElse <|>
+  try parseForall <|> try parseEndForall <|> try parseIf <|> try parseElse <|>
   try parseEndIf
   where
     parseForall = do
@@ -180,11 +178,6 @@ parseControl' =
       spaces
       x <- parseDeref
       return $ ControlIf x
-    parseElseIf = do
-      _ <- try $ string "elseif"
-      spaces
-      x <- parseDeref
-      return $ ControlElseIf x
     parseElse = do
       _ <- try $ string "else"
       return $ ControlElse
