@@ -49,8 +49,8 @@ module.  This gives you variable interpolation, but no control statements like
 
 [`Haiji`](https://hackage.haskell.org/package/haiji) is another interesting
 library.  It has all the features we require, but its templates take a very
-[long time to compile](https://github.com/blueimpact/kucipong/pull/7) with GHC
->= 7.10.
+[long time to compile](https://github.com/blueimpact/kucipong/pull/7) with
+GHC >= 7.10.
 
 Hetercephalus fills this missing niche. It gives you variable interpolation
 along with control statements that can be used with any markup language.  Its
@@ -93,7 +93,7 @@ Here are the main features of this module.
     Other template engines like [EDE](https://hackage.haskell.org/package/ede)
     provide rich control statements like importing external files.
     Heterocephalus does not provide control statements like this because it is
-    supposed to be use with a rich front-end template engine (like pug, slim,
+    supposed to be used with a rich front-end template engine (like pug, slim,
     etc).
 
 ## Usage
