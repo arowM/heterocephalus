@@ -3,6 +3,18 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
+{- |
+Module      :  Text.Heterocephalus
+
+Copyright   :  Kadzuya Okamoto 2016
+License     :  MIT
+
+Stability   :  experimental
+Portability :  unknown
+
+This module exports functions for working with frontend templates from Haskell.
+-}
+
 module Text.Heterocephalus
   (
   -- * Core functions
@@ -70,7 +82,7 @@ import Text.Heterocephalus.Parse (Doc(..), Content(..), parseDoc)
 compileTextFile :: FilePath -> Q Exp
 compileTextFile = compileFile textSetting
 
-{-| Same as 'compileText' but we can specify default scope.
+{-| Same as 'compileText' but allows the user to specify default values for template parameters.
 
   >>> :set -XOverloadedStrings
   >>> :{
@@ -99,7 +111,7 @@ compileTextFile = compileFile textSetting
 compileTextFileWithDefault :: FilePath -> DefaultScope -> Q Exp
 compileTextFileWithDefault fp scope = compileFileWithDefault scope textSetting fp
 
-{-| Same as 'compileTextFile' but escapes template variables for Html.
+{-| Same as 'compileTextFile' but escapes template variables in HTML.
 
   >>> putStr $ renderMarkup (let as = ["<a>", "b"] in $(compileHtmlFile "templates/sample.txt"))
   sample
@@ -109,7 +121,7 @@ compileTextFileWithDefault fp scope = compileFileWithDefault scope textSetting f
 compileHtmlFile :: FilePath -> Q Exp
 compileHtmlFile fp = compileHtmlFileWithDefault fp []
 
-{-| Same as 'compileHtmlFile' but we can specify default scope.
+{-| Same as 'compileHtmlFile' but allows the user to specify default values for template parameters.
 
   >>> :set -XOverloadedStrings
   >>> :{
@@ -139,7 +151,7 @@ compileHtmlFileWithDefault :: FilePath -> DefaultScope -> Q Exp
 compileHtmlFileWithDefault fp scope = compileFileWithDefault scope htmlSetting fp
 
 {-| Heterocephalus quasi-quoter.
-  This function DOES NOT escape template variables.
+  This function __DOES NOT__ escape template variables.
   To render the compiled file, use @'Text.Blaze.Renderer'.*.renderMarkup@.
 
   >>> renderMarkup (let as = ["<a>", "b"] in [compileText|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
@@ -151,8 +163,8 @@ compileHtmlFileWithDefault fp scope = compileFileWithDefault scope htmlSetting f
 compileText :: QuasiQuoter
 compileText = compile textSetting
 
-{-| Heterocephalus quasi-quoter for Html.
-  Same as 'compileText' but this function do escape template variables for Html.
+{-| Heterocephalus quasi-quoter for HTML.
+  Same as 'compileText' but this function does escape template variables in HTML.
 
   >>> renderMarkup (let as = ["<a>", "b"] in [compileHtml|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
   "sample key: &lt;a&gt;, key: b, "
