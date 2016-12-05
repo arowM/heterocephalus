@@ -193,9 +193,7 @@ compileFile = compileFileWithDefault []
 -}
 compileFileWithDefault :: DefaultScope -> HeterocephalusSetting -> FilePath -> Q Exp
 compileFileWithDefault scope' set fp = do
-#ifdef GHC_7_4
   qAddDependentFile fp
-#endif
   contents <- fmap TL.unpack $ qRunIO $ readUtf8File fp
   compileFromStringWithDefault scope' set contents
 
