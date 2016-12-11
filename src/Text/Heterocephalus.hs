@@ -49,7 +49,7 @@ import Data.List (intercalate)
 import Data.String (IsString(..))
 import Data.Text (Text, pack)
 import qualified Data.Text.Lazy as TL
-import Language.Haskell.TH.Lib (varE)
+import Language.Haskell.TH.Lib (ExpQ, varE)
 import Language.Haskell.TH.Quote
 #if MIN_VERSION_template_haskell(2,9,0)
 import Language.Haskell.TH.Syntax hiding (Module)
@@ -238,6 +238,49 @@ textSetting = HeterocephalusSetting
   }
 
 type DefaultScope = [(Ident, Q Exp)]
+
+type OverwriteScope = [(Ident, Q Exp)]
+
+data ScopeM a
+  = SetDefault Ident ExpQ (ScopeM a)
+  | Overwrite Ident ExpQ (ScopeM a)
+  | PureScopeM a
+
+runScopeM :: ScopeM a -> (DefaultScope, OverwriteScope)
+runScopeM (SetDefault ident qexp next) =
+  let (defaults, overwrites) = runScopeM next
+  in ((ident, qexp) : defaults, overwrites)
+runScopeM (Overwrite ident qexp next) =
+  let (defaults, overwrites) = runScopeM next
+  in (defaults, (ident, qexp) : overwrites)
+runScopeM (PureScopeM _) =
+  ([], [])
+
+instance Functor ScopeM where
+  fmap f (SetDefault ident qexp next) =
+    SetDefault ident qexp $ fmap f next
+  fmap f (Overwrite ident qexp next) =
+    Overwrite ident qexp $ fmap f next
+  fmap f (PureScopeM x) =
+    PureScopeM $ f x
+instance Applicative ScopeM where
+  pure = PureScopeM
+  SetDefault ident qexp next <*> f =
+    SetDefault ident qexp $ next <*> f
+  Overwrite ident qexp next <*> f =
+    Overwrite ident qexp $ next <*> f
+  PureScopeM g <*> f = f >>= (PureScopeM . g)
+
+instance Monad ScopeM where
+  SetDefault ident qexp next >>= f = SetDefault ident qexp $ next >>= f
+  Overwrite ident qexp next >>= f = Overwrite ident qexp $ next >>= f
+  PureScopeM a >>= f = f a
+
+setDefault :: Ident -> Q Exp -> ScopeM ()
+setDefault ident qexp = SetDefault ident qexp $ pure ()
+
+overwrite :: Ident -> Q Exp -> ScopeM ()
+overwrite ident qexp = Overwrite ident qexp $ pure ()
 
 instance IsString Ident where
   fromString = Ident
