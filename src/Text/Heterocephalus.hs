@@ -19,20 +19,29 @@ module Text.Heterocephalus
   (
   -- * Core functions
     compileTextFile
+  , compileTextFileWith
   , compileTextFileWithDefault
   , compileHtmlFile
+  , compileHtmlFileWith
   , compileHtmlFileWithDefault
 
   -- * QuasiQuoters
   , compileText
   , compileHtml
 
+  -- * ScopeM
+  , ScopeM
+  , setDefault
+  , overwrite
+
   -- * low-level
   , HeterocephalusSetting(escapeExp)
   , DefaultScope
   , compile
+  , compileWith
   , compileWithDefault
   , compileFile
+  , compileFileWith
   , compileFileWithDefault
   , compileFromString
   , compileFromStringWithDefault
@@ -82,6 +91,52 @@ import Text.Heterocephalus.Parse (Doc(..), Content(..), parseDoc)
 compileTextFile :: FilePath -> Q Exp
 compileTextFile = compileFile textSetting
 
+{-| Same as 'compileText' but allows the user to specify extra values for template parameters.
+  Values declared by 'overwrite' overwrites same name variables.
+  Values declared by 'setDefault' are overwritten by same name variables.
+
+  >>> :set -XOverloadedStrings
+  >>> :{
+  >>> putStr $ renderMarkup (
+  >>>   let as = ["<a>", "b"]
+  >>>   in $(compileTextFileWith "templates/sample.txt" $ do
+  >>>     setDefault "as" [| ["foo", "bar"] |]
+  >>>   )
+  >>> )
+  >>> :}
+  sample
+  key: <a>,
+  key: b,
+
+  >>> :{
+  >>> putStr $ renderMarkup (
+  >>>   let as = ["<a>", "b"]
+  >>>   in $(compileTextFileWith "templates/sample.txt" $ do
+  >>>     overwrite "as" [| ["foo", "bar"] |]
+  >>>   )
+  >>> )
+  >>> :}
+  sample
+  key: foo,
+  key: bar,
+
+  >>> :{
+  >>> putStr $ renderMarkup (
+  >>>   let as = ["<a>", "b"]
+  >>>   in $(compileTextFileWith "templates/sample.txt" $ do
+  >>>     overwrite "as" [| ["baz", "foobar"] |]
+  >>>     setDefault "as" [| ["foo", "bar"] |]
+  >>>     overwrite "as" [| ["bazbaz", "barbar"] |]
+  >>>   )
+  >>> )
+  >>> :}
+  sample
+  key: baz,
+  key: foobar,
+ -}
+compileTextFileWith :: FilePath -> ScopeM () -> Q Exp
+compileTextFileWith fp scopeM = compileFileWith scopeM textSetting fp
+
 {-| Same as 'compileText' but allows the user to specify default values for template parameters.
 
   >>> :set -XOverloadedStrings
@@ -120,6 +175,52 @@ compileTextFileWithDefault fp scope = compileFileWithDefault scope textSetting f
  -}
 compileHtmlFile :: FilePath -> Q Exp
 compileHtmlFile fp = compileHtmlFileWithDefault fp []
+
+{-| Same as 'compileHtmlFile' but allows the user to specify extra values for template parameters.
+  Values declared by 'overwrite' overwrites same name variables.
+  Values declared by 'setDefault' are overwritten by same name variables.
+
+  >>> :set -XOverloadedStrings
+  >>> :{
+  >>> putStr $ renderMarkup (
+  >>>   let as = ["<a>", "b"]
+  >>>   in $(compileHtmlFileWith "templates/sample.txt" $ do
+  >>>     setDefault "as" [| ["foo", "bar"] |]
+  >>>   )
+  >>> )
+  >>> :}
+  sample
+  key: &lt;a&gt;,
+  key: b,
+
+  >>> :{
+  >>> putStr $ renderMarkup (
+  >>>   let as = ["<a>", "b"]
+  >>>   in $(compileHtmlFileWith "templates/sample.txt" $ do
+  >>>     overwrite "as" [| ["foo", "bar"] |]
+  >>>   )
+  >>> )
+  >>> :}
+  sample
+  key: foo,
+  key: bar,
+
+  >>> :{
+  >>> putStr $ renderMarkup (
+  >>>   let as = ["<a>", "b"]
+  >>>   in $(compileHtmlFileWith "templates/sample.txt" $ do
+  >>>     overwrite "as" [| ["baz", "foobar"] |]
+  >>>     setDefault "as" [| ["foo", "bar"] |]
+  >>>     overwrite "as" [| ["bazbaz", "barbar"] |]
+  >>>   )
+  >>> )
+  >>> :}
+  sample
+  key: baz,
+  key: foobar,
+ -}
+compileHtmlFileWith :: FilePath -> ScopeM () -> Q Exp
+compileHtmlFileWith fp scopeM = compileFileWith scopeM htmlSetting fp
 
 {-| Same as 'compileHtmlFile' but allows the user to specify default values for template parameters.
 
@@ -175,6 +276,19 @@ compileHtml = compile htmlSetting
 compile :: HeterocephalusSetting -> QuasiQuoter
 compile = compileWithDefault []
 
+{-| QuasiQuoter.
+ -}
+compileWith :: ScopeM () -> HeterocephalusSetting -> QuasiQuoter
+compileWith scopeM set =
+  QuasiQuoter
+  { quoteExp = compileFromStringWith scopeM set
+  , quotePat = error "not used"
+  , quoteType = error "not used"
+  , quoteDec = error "not used"
+  }
+
+{-| QuasiQuoter.
+ -}
 compileWithDefault :: DefaultScope -> HeterocephalusSetting -> QuasiQuoter
 compileWithDefault scope set =
   QuasiQuoter
@@ -191,6 +305,14 @@ compileFile = compileFileWithDefault []
 
 {-| Same as 'compileFile' but we can specify default scope.
 -}
+compileFileWith :: ScopeM () -> HeterocephalusSetting -> FilePath -> Q Exp
+compileFileWith scopeM set fp = do
+  qAddDependentFile fp
+  contents <- fmap TL.unpack $ qRunIO $ readUtf8File fp
+  compileFromStringWith scopeM set contents
+
+{-| Same as 'compileFile' but we can specify default scope.
+-}
 compileFileWithDefault :: DefaultScope -> HeterocephalusSetting -> FilePath -> Q Exp
 compileFileWithDefault scope' set fp = do
   qAddDependentFile fp
@@ -199,6 +321,16 @@ compileFileWithDefault scope' set fp = do
 
 compileFromString :: HeterocephalusSetting -> String -> Q Exp
 compileFromString = compileFromStringWithDefault []
+
+compileFromStringWith :: ScopeM () -> HeterocephalusSetting -> String -> Q Exp
+compileFromStringWith scopeM set s = do
+  defScope' <-
+    forM defScope $ \(ident, qexp) -> (ident, ) <$> overwriteScope ident qexp
+  owScope' <-
+    forM owScope $ \(ident, qexp) -> (ident, ) <$> qexp
+  docsToExp set (owScope' ++ defScope') $ docFromString s
+ where
+  (defScope, owScope) = runScopeM scopeM
 
 compileFromStringWithDefault :: DefaultScope -> HeterocephalusSetting -> String -> Q Exp
 compileFromStringWithDefault scope' set s = do
@@ -241,11 +373,17 @@ type DefaultScope = [(Ident, Q Exp)]
 
 type OverwriteScope = [(Ident, Q Exp)]
 
+{- | A type to handle extra scopes.
+ - This is opaque type, so use 'setDefault' and 'overwrite'
+ - to construct new 'ScopeM'.
+ -}
 data ScopeM a
   = SetDefault Ident ExpQ (ScopeM a)
   | Overwrite Ident ExpQ (ScopeM a)
   | PureScopeM a
 
+{- | Get default values and values to overwrite from 'ScopeM'.
+ -}
 runScopeM :: ScopeM a -> (DefaultScope, OverwriteScope)
 runScopeM (SetDefault ident qexp next) =
   let (defaults, overwrites) = runScopeM next
@@ -263,6 +401,7 @@ instance Functor ScopeM where
     Overwrite ident qexp $ fmap f next
   fmap f (PureScopeM x) =
     PureScopeM $ f x
+
 instance Applicative ScopeM where
   pure = PureScopeM
   SetDefault ident qexp next <*> f =
@@ -276,9 +415,17 @@ instance Monad ScopeM where
   Overwrite ident qexp next >>= f = Overwrite ident qexp $ next >>= f
   PureScopeM a >>= f = f a
 
+{-| Constructor for 'ScopeM'.
+ - Values declared by this function are overwritten
+ - by same name variables exits in scope of render function.
+ -}
 setDefault :: Ident -> Q Exp -> ScopeM ()
 setDefault ident qexp = SetDefault ident qexp $ pure ()
 
+{-| Constructor for 'ScopeM'.
+ - Values declared by this function overwrites
+ - same name variables exits in scope of render function.
+ -}
 overwrite :: Ident -> Q Exp -> ScopeM ()
 overwrite ident qexp = Overwrite ident qexp $ pure ()
 
