@@ -49,7 +49,7 @@ module Text.Heterocephalus
 
 #if MIN_VERSION_base(4,9,0)
 #else
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*>), Applicative(..))
 #endif
 import Control.Monad (forM)
 import Data.Char (isDigit)
@@ -411,6 +411,10 @@ instance Applicative ScopeM where
   PureScopeM g <*> f = f >>= (PureScopeM . g)
 
 instance Monad ScopeM where
+#if MIN_VERSION_base(4,9,0)
+#else
+  return = PureScopeM
+#endif
   SetDefault ident qexp next >>= f = SetDefault ident qexp $ next >>= f
   Overwrite ident qexp next >>= f = Overwrite ident qexp $ next >>= f
   PureScopeM a >>= f = f a
