@@ -50,9 +50,12 @@ module Text.Heterocephalus
 #if MIN_VERSION_base(4,9,0)
 #else
 import Control.Applicative ((<$>), (<*>), Applicative(..))
+import Data.Monoid (mempty)
 #endif
 import Control.Monad (forM)
 import Data.Char (isDigit)
+import Data.DList (DList)
+import qualified Data.DList as DList
 import qualified Data.Foldable as F
 import Data.List (intercalate)
 import Data.String (IsString(..))
@@ -124,9 +127,9 @@ compileTextFile = compileFile textSetting
   >>> putStr $ renderMarkup (
   >>>   let as = ["<a>", "b"]
   >>>   in $(compileTextFileWith "templates/sample.txt" $ do
-  >>>     overwrite "as" [| ["baz", "foobar"] |]
-  >>>     setDefault "as" [| ["foo", "bar"] |]
   >>>     overwrite "as" [| ["bazbaz", "barbar"] |]
+  >>>     setDefault "as" [| ["foo", "bar"] |]
+  >>>     overwrite "as" [| ["baz", "foobar"] |]
   >>>   )
   >>> )
   >>> :}
@@ -209,9 +212,9 @@ compileHtmlFile fp = compileHtmlFileWithDefault fp []
   >>> putStr $ renderMarkup (
   >>>   let as = ["<a>", "b"]
   >>>   in $(compileHtmlFileWith "templates/sample.txt" $ do
-  >>>     overwrite "as" [| ["baz", "foobar"] |]
-  >>>     setDefault "as" [| ["foo", "bar"] |]
   >>>     overwrite "as" [| ["bazbaz", "barbar"] |]
+  >>>     setDefault "as" [| ["foo", "bar"] |]
+  >>>     overwrite "as" [| ["baz", "foobar"] |]
   >>>   )
   >>> )
   >>> :}
@@ -330,7 +333,9 @@ compileFromStringWith scopeM set s = do
     forM owScope $ \(ident, qexp) -> (ident, ) <$> qexp
   docsToExp set (owScope' ++ defScope') $ docFromString s
  where
-  (defScope, owScope) = runScopeM scopeM
+  (defDList, owDList) = runScopeM scopeM
+  defScope = DList.toList defDList
+  owScope = DList.toList owDList
 
 compileFromStringWithDefault :: DefaultScope -> HeterocephalusSetting -> String -> Q Exp
 compileFromStringWithDefault scope' set s = do
@@ -371,7 +376,8 @@ textSetting = HeterocephalusSetting
 
 type DefaultScope = [(Ident, Q Exp)]
 
-type OverwriteScope = [(Ident, Q Exp)]
+type DefaultDList = DList (Ident, Q Exp)
+type OverwriteDList = DList (Ident, Q Exp)
 
 {- | A type to handle extra scopes.
  - This is opaque type, so use 'setDefault' and 'overwrite'
@@ -384,15 +390,15 @@ data ScopeM a
 
 {- | Get default values and values to overwrite from 'ScopeM'.
  -}
-runScopeM :: ScopeM a -> (DefaultScope, OverwriteScope)
+runScopeM :: ScopeM a -> (DefaultDList, OverwriteDList)
 runScopeM (SetDefault ident qexp next) =
   let (defaults, overwrites) = runScopeM next
-  in ((ident, qexp) : defaults, overwrites)
+  in (DList.snoc defaults (ident, qexp), overwrites)
 runScopeM (Overwrite ident qexp next) =
   let (defaults, overwrites) = runScopeM next
-  in (defaults, (ident, qexp) : overwrites)
+  in (defaults, DList.snoc overwrites (ident, qexp))
 runScopeM (PureScopeM _) =
-  ([], [])
+  (mempty, mempty)
 
 instance Functor ScopeM where
   fmap f (SetDefault ident qexp next) =
