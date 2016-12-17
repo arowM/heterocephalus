@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE CPP #-}
@@ -50,7 +51,7 @@ module Text.Heterocephalus
 #if MIN_VERSION_base(4,9,0)
 #else
 import Control.Applicative ((<$>), (<*>), Applicative(..))
-import Data.Monoid (mempty)
+import Data.Monoid (Monoid, mempty, mappend)
 #endif
 import Control.Monad (forM)
 import Data.Char (isDigit)
@@ -399,6 +400,10 @@ runScopeM (Overwrite ident qexp next) =
   in (defaults, DList.snoc overwrites (ident, qexp))
 runScopeM (PureScopeM _) =
   (mempty, mempty)
+
+instance Monoid (ScopeM ()) where
+  mempty = pure ()
+  mappend a b = a >> b
 
 instance Functor ScopeM where
   fmap f (SetDefault ident qexp next) =
