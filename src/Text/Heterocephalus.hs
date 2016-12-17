@@ -98,73 +98,73 @@ compileTextFile = compileFile textSetting
   Values declared by 'overwrite' overwrites same name variables.
   Values declared by 'setDefault' are overwritten by same name variables.
 
-  >>> :set -XOverloadedStrings
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   let as = ["<a>", "b"]
-  >>>   in $(compileTextFileWith "templates/sample.txt" $ do
-  >>>     setDefault "as" [| ["foo", "bar"] |]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: <a>,
-  key: b,
+>>> :set -XOverloadedStrings
+>>> :{
+putStr $ renderMarkup (
+  let as = ["<a>", "b"]
+  in $(compileTextFileWith "templates/sample.txt" $ do
+    setDefault "as" [| ["foo", "bar"] |]
+  )
+)
+:}
+sample
+key: <a>,
+key: b,
 
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   let as = ["<a>", "b"]
-  >>>   in $(compileTextFileWith "templates/sample.txt" $ do
-  >>>     overwrite "as" [| ["foo", "bar"] |]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: foo,
-  key: bar,
+>>> :{
+putStr $ renderMarkup (
+  let as = ["<a>", "b"]
+  in $(compileTextFileWith "templates/sample.txt" $ do
+    overwrite "as" [| ["foo", "bar"] |]
+  )
+)
+:}
+sample
+key: foo,
+key: bar,
 
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   let as = ["<a>", "b"]
-  >>>   in $(compileTextFileWith "templates/sample.txt" $ do
-  >>>     overwrite "as" [| ["bazbaz", "barbar"] |]
-  >>>     setDefault "as" [| ["foo", "bar"] |]
-  >>>     overwrite "as" [| ["baz", "foobar"] |]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: baz,
-  key: foobar,
+>>> :{
+putStr $ renderMarkup (
+  let as = ["<a>", "b"]
+  in $(compileTextFileWith "templates/sample.txt" $ do
+    overwrite "as" [| ["bazbaz", "barbar"] |]
+    setDefault "as" [| ["foo", "bar"] |]
+    overwrite "as" [| ["baz", "foobar"] |]
+  )
+)
+:}
+sample
+key: baz,
+key: foobar,
  -}
 compileTextFileWith :: FilePath -> ScopeM () -> Q Exp
 compileTextFileWith fp scopeM = compileFileWith scopeM textSetting fp
 
 {-| Same as 'compileText' but allows the user to specify default values for template parameters.
 
-  >>> :set -XOverloadedStrings
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   let as = ["<a>", "b"]
-  >>>   in $(compileTextFileWithDefault "templates/sample.txt"
-  >>>     [("as", [| ["foo", "bar"] |])]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: <a>,
-  key: b,
+>>> :set -XOverloadedStrings
+>>> :{
+putStr $ renderMarkup (
+  let as = ["<a>", "b"]
+  in $(compileTextFileWithDefault "templates/sample.txt"
+    [("as", [| ["foo", "bar"] |])]
+  )
+)
+:}
+sample
+key: <a>,
+key: b,
 
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   $(compileTextFileWithDefault "templates/sample.txt"
-  >>>     [("as", [| ["foo", "bar"] |])]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: foo,
-  key: bar,
+>>> :{
+putStr $ renderMarkup (
+  $(compileTextFileWithDefault "templates/sample.txt"
+    [("as", [| ["foo", "bar"] |])]
+  )
+)
+:}
+sample
+key: foo,
+key: bar,
  -}
 compileTextFileWithDefault :: FilePath -> DefaultScope -> Q Exp
 compileTextFileWithDefault fp scope = compileFileWithDefault scope textSetting fp
@@ -183,73 +183,73 @@ compileHtmlFile fp = compileHtmlFileWithDefault fp []
   Values declared by 'overwrite' overwrites same name variables.
   Values declared by 'setDefault' are overwritten by same name variables.
 
-  >>> :set -XOverloadedStrings
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   let as = ["<a>", "b"]
-  >>>   in $(compileHtmlFileWith "templates/sample.txt" $ do
-  >>>     setDefault "as" [| ["foo", "bar"] |]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: &lt;a&gt;,
-  key: b,
+>>> :set -XOverloadedStrings
+>>> :{
+putStr $ renderMarkup (
+  let as = ["<a>", "b"]
+  in $(compileHtmlFileWith "templates/sample.txt" $ do
+    setDefault "as" [| ["foo", "bar"] |]
+  )
+)
+:}
+sample
+key: &lt;a&gt;,
+key: b,
 
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   let as = ["<a>", "b"]
-  >>>   in $(compileHtmlFileWith "templates/sample.txt" $ do
-  >>>     overwrite "as" [| ["foo", "bar"] |]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: foo,
-  key: bar,
+>>> :{
+putStr $ renderMarkup (
+  let as = ["<a>", "b"]
+  in $(compileHtmlFileWith "templates/sample.txt" $ do
+    overwrite "as" [| ["foo", "bar"] |]
+  )
+)
+:}
+sample
+key: foo,
+key: bar,
 
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   let as = ["<a>", "b"]
-  >>>   in $(compileHtmlFileWith "templates/sample.txt" $ do
-  >>>     overwrite "as" [| ["bazbaz", "barbar"] |]
-  >>>     setDefault "as" [| ["foo", "bar"] |]
-  >>>     overwrite "as" [| ["baz", "foobar"] |]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: baz,
-  key: foobar,
+>>> :{
+putStr $ renderMarkup (
+  let as = ["<a>", "b"]
+  in $(compileHtmlFileWith "templates/sample.txt" $ do
+    overwrite "as" [| ["bazbaz", "barbar"] |]
+    setDefault "as" [| ["foo", "bar"] |]
+    overwrite "as" [| ["baz", "foobar"] |]
+  )
+)
+:}
+sample
+key: baz,
+key: foobar,
  -}
 compileHtmlFileWith :: FilePath -> ScopeM () -> Q Exp
 compileHtmlFileWith fp scopeM = compileFileWith scopeM htmlSetting fp
 
 {-| Same as 'compileHtmlFile' but allows the user to specify default values for template parameters.
 
-  >>> :set -XOverloadedStrings
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   let as = ["<a>", "b"]
-  >>>   in $(compileHtmlFileWithDefault "templates/sample.txt"
-  >>>     [("as", [| ["foo", "bar"] |])]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: &lt;a&gt;,
-  key: b,
+>>> :set -XOverloadedStrings
+:{
+putStr $ renderMarkup (
+  let as = ["<a>", "b"]
+  in $(compileHtmlFileWithDefault "templates/sample.txt"
+    [("as", [| ["foo", "bar"] |])]
+  )
+)
+:}
+sample
+key: &lt;a&gt;,
+key: b,
 
-  >>> :{
-  >>> putStr $ renderMarkup (
-  >>>   $(compileHtmlFileWithDefault "templates/sample.txt"
-  >>>     [("as", [| ["foo", "bar"] |])]
-  >>>   )
-  >>> )
-  >>> :}
-  sample
-  key: foo,
-  key: bar,
+>>> :{
+putStr $ renderMarkup (
+  $(compileHtmlFileWithDefault "templates/sample.txt"
+    [("as", [| ["foo", "bar"] |])]
+  )
+)
+:}
+sample
+key: foo,
+key: bar,
  -}
 compileHtmlFileWithDefault :: FilePath -> DefaultScope -> Q Exp
 compileHtmlFileWithDefault fp scope = compileFileWithDefault scope htmlSetting fp
