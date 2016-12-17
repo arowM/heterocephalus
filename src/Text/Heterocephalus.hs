@@ -380,8 +380,8 @@ type DefaultDList = DList (Ident, Q Exp)
 type OverwriteDList = DList (Ident, Q Exp)
 
 {- | A type to handle extra scopes.
- - This is opaque type, so use 'setDefault' and 'overwrite'
- - to construct new 'ScopeM'.
+   This is opaque type, so use 'setDefault' and 'overwrite'
+   to construct new 'ScopeM'.
  -}
 data ScopeM a
   = SetDefault Ident ExpQ (ScopeM a)
@@ -426,15 +426,15 @@ instance Monad ScopeM where
   PureScopeM a >>= f = f a
 
 {-| Constructor for 'ScopeM'.
- - Values declared by this function are overwritten
- - by same name variables exits in scope of render function.
+  Values declared by this function are overwritten
+  by same name variables exits in scope of render function.
  -}
 setDefault :: Ident -> Q Exp -> ScopeM ()
 setDefault ident qexp = SetDefault ident qexp $ pure ()
 
 {-| Constructor for 'ScopeM'.
- - Values declared by this function overwrites
- - same name variables exits in scope of render function.
+  Values declared by this function overwrites
+  same name variables exits in scope of render function.
  -}
 overwrite :: Ident -> Q Exp -> ScopeM ()
 overwrite ident qexp = Overwrite ident qexp $ pure ()
