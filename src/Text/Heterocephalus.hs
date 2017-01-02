@@ -76,7 +76,8 @@ import Text.Hamlet
 import Text.Hamlet.Parse
 import Text.Shakespeare.Base
 
-import Text.Heterocephalus.Parse (Doc(..), Content(..), parseDoc)
+import Text.Heterocephalus.Parse
+       (Doc(..), Content(..), docFromString, parseDoc)
 
 {- $setup
   >>> :set -XTemplateHaskell -XQuasiQuotes
@@ -350,12 +351,6 @@ overwriteScope (Ident str) qexp = do
   case mName of
     Just x -> varE x
     Nothing -> qexp
-
-docFromString :: String -> [Doc]
-docFromString s =
-  case parseDoc s of
-    Error s' -> error s'
-    Ok d -> d
 
 data HeterocephalusSetting = HeterocephalusSetting
   { escapeExp :: Q Exp
