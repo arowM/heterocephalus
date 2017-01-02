@@ -64,20 +64,26 @@ import Data.Text (Text, pack)
 import qualified Data.Text.Lazy as TL
 import Language.Haskell.TH.Lib (ExpQ, varE)
 import Language.Haskell.TH.Quote
+       (QuasiQuoter(QuasiQuoter), quoteExp, quoteDec, quotePat, quoteType)
 #if MIN_VERSION_template_haskell(2,9,0)
-import Language.Haskell.TH.Syntax hiding (Module)
+import Language.Haskell.TH.Syntax
+       (Con(..), Dec(..), Exp(..), Info(..), Lit(..), Name(..), Pat(..),
+        Q, Stmt(..), lookupValueName, mkName, nameBase, newName,
+        qAddDependentFile, qRunIO, reify)
 #else
 import Language.Haskell.TH.Syntax
 #endif
 import Text.Blaze (preEscapedToMarkup)
 import Text.Blaze.Html (toHtml)
 import Text.Blaze.Internal (preEscapedText)
-import Text.Hamlet
+import Text.Hamlet (Html, HtmlUrl, HtmlUrlI18n, condH)
 import Text.Hamlet.Parse
+       (Binding(..), DataConstr(..), Module(Module), specialOrIdent)
 import Text.Shakespeare.Base
+       (Deref, Ident(..), Scope, derefToExp, readUtf8File)
 
 import Text.Heterocephalus.Parse
-       (Doc(..), Content(..), docFromString, parseDoc)
+       (Doc(..), Content(..), docFromString)
 
 {- $setup
   >>> :set -XTemplateHaskell -XQuasiQuotes
