@@ -28,6 +28,7 @@ data Control
   | ControlEndForall
   | ControlIf Deref
   | ControlElse
+  | ControlElseIf Deref
   | ControlEndIf
   | NoControl Content
   deriving (Show, Eq, Read, Data, Typeable)
@@ -46,10 +47,10 @@ type UserParser = Parsec String ()
 docFromString :: String -> [Doc]
 docFromString s =
   case parseDoc s of
-    Error s' -> error s'
-    Ok d -> d
+    Left s' -> error s'
+    Right d -> d
 
-parseDoc :: String -> Result [Doc]
+parseDoc :: String -> Either String [Doc]
 parseDoc s = do
   controls <- parseLineControl s
   return $ controlsToDocs controls
@@ -139,11 +140,11 @@ parseReps depth (x:xs)
     isForall (ControlForall _ _) = True
     isForall _ = False
 
-parseLineControl :: String -> Result [Control]
+parseLineControl :: String -> Either String [Control]
 parseLineControl s =
   case parse lineControl s s of
-    Left e -> Error $ show e
-    Right x -> Ok x
+    Left e -> Left $ show e
+    Right x -> Right x
 
 lineControl :: UserParser [Control]
 lineControl = manyTill control $ try eof >> return ()
