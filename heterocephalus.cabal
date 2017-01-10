@@ -31,6 +31,8 @@ library
   exposed-modules:     Text.Heterocephalus
   other-modules:       Text.Hamlet.Parse
                      , Text.Heterocephalus.Parse
+                     , Text.Heterocephalus.Parse.Control
+                     , Text.Heterocephalus.Parse.Doc
   build-depends:       base >= 4.7 && < 5
                      , blaze-html >= 0.8 && < 0.9
                      , blaze-markup >= 0.7 && < 0.8
