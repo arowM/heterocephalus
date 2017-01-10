@@ -16,10 +16,9 @@ import Data.Char (isUpper)
 import Data.Data (Data)
 import Data.Typeable (Typeable)
 import Text.Parsec
-       (Parsec, ParseError, SourcePos, (<?>), (<|>), alphaNum, between,
-        char, choice, eof, incSourceLine, many, many1, manyTill, noneOf,
-        oneOf, option, optional, optionMaybe, parse, sepBy, skipMany,
-        spaces, string, tokenPrim, try)
+       (Parsec, (<?>), (<|>), alphaNum, between, char, choice, eof, many,
+        many1, manyTill, noneOf, oneOf, option, optional, parse, sepBy,
+        skipMany, spaces, string, try)
 import Text.Shakespeare.Base
        (Ident(Ident), Deref, parseDeref, parseHash)
 

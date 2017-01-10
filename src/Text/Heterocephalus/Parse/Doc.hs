@@ -9,19 +9,15 @@ module Text.Heterocephalus.Parse.Doc where
 
 #if MIN_VERSION_base(4,9,0)
 #else
-import Control.Applicative ((<$>))
+import Control.Applicative ((*>), pure)
 #endif
-import Control.Monad (guard, void)
-import Data.Char (isUpper)
+import Control.Monad (void)
 import Data.Data (Data)
 import Data.Typeable (Typeable)
 import Text.Parsec
-       (Parsec, ParseError, SourcePos, (<?>), (<|>), alphaNum, between,
-        char, choice, eof, incSourceLine, many, many1, manyTill, noneOf,
-        oneOf, option, optional, optionMaybe, parse, sepBy, skipMany,
-        spaces, string, tokenPrim, try)
-import Text.Shakespeare.Base
-       (Ident(Ident), Deref, parseDeref, parseHash)
+       (Parsec, ParseError, SourcePos, (<|>), incSourceLine, many,
+        optionMaybe, parse, tokenPrim)
+import Text.Shakespeare.Base (Deref)
 
 import Text.Hamlet.Parse
 import Text.Heterocephalus.Parse.Control (Content(..), Control(..))

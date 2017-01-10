@@ -11,9 +11,8 @@ module Text.Hamlet.Parse
     where
 
 import Text.Shakespeare.Base
-import Control.Applicative (Applicative (..))
-import Control.Monad
-import Data.Data
+import Data.Data (Data)
+import Data.Typeable (Typeable)
 
 data Binding = BindVar Ident
              | BindAs Ident Binding
