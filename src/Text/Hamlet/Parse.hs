@@ -3,8 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleInstances #-}
 module Text.Hamlet.Parse
-    ( Result (..)
-    , Binding (..)
+    ( Binding (..)
     , specialOrIdent
     , DataConstr (..)
     , Module (..)
@@ -12,22 +11,8 @@ module Text.Hamlet.Parse
     where
 
 import Text.Shakespeare.Base
-import Control.Applicative (Applicative (..))
-import Control.Monad
-import Data.Data
-
-data Result v = Error String | Ok v
-    deriving (Show, Eq, Read, Data, Typeable)
-instance Monad Result where
-    return = Ok
-    Error s >>= _ = Error s
-    Ok v >>= f = f v
-    fail = Error
-instance Functor Result where
-    fmap = liftM
-instance Applicative Result where
-    pure = return
-    (<*>) = ap
+import Data.Data (Data)
+import Data.Typeable (Typeable)
 
 data Binding = BindVar Ident
              | BindAs Ident Binding
