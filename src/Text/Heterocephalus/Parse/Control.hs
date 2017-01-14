@@ -100,31 +100,31 @@ parseControl' =
   where
     parseForall :: UserParser Control
     parseForall = do
-      _ <- try $ string "forall"
+      _ <- string "forall"
       spaces
       (x, y) <- binding
       return $ ControlForall x y
 
     parseEndForall :: UserParser Control
     parseEndForall = do
-      _ <- try $ string "endforall"
+      _ <- string "endforall"
       return $ ControlEndForall
 
     parseIf :: UserParser Control
     parseIf = do
-      _ <- try $ string "if"
+      _ <- string "if"
       spaces
       x <- parseDeref
       return $ ControlIf x
 
     parseElse :: UserParser Control
     parseElse = do
-      _ <- try $ string "else"
+      _ <- string "else"
       return $ ControlElse
 
     parseEndIf :: UserParser Control
     parseEndIf = do
-      _ <- try $ string "endif"
+      _ <- string "endif"
       return $ ControlEndIf
 
     binding :: UserParser (Deref, Binding)
