@@ -95,7 +95,8 @@ parseControl c = do
 
 parseControl' :: UserParser Control
 parseControl' =
-  try parseForall <|> try parseEndForall <|> try parseIf <|> try parseElse <|>
+  try parseForall <|> try parseEndForall <|> try parseIf <|> try parseElseIf <|>
+  try parseElse <|>
   try parseEndIf
   where
     parseForall :: UserParser Control
@@ -116,6 +117,13 @@ parseControl' =
       spaces
       x <- parseDeref
       return $ ControlIf x
+
+    parseElseIf :: UserParser Control
+    parseElseIf = do
+      _ <- string "elseif"
+      spaces
+      x <- parseDeref
+      return $ ControlElseIf x
 
     parseElse :: UserParser Control
     parseElse = do

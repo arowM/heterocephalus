@@ -59,13 +59,26 @@ condDoc :: DocParser Doc
 condDoc = do
   (ControlIf ifDeref) <- ifControlStatement
   ifInnerDocs <- docsParser
+  elseIfs <- condElseIfs
   maybeElseInnerDocs <- optionMaybe $ elseControlStatement *> docsParser
   void endifControlStatement
-  pure $ DocCond [(ifDeref, ifInnerDocs)] maybeElseInnerDocs
+  let allConds = (ifDeref, ifInnerDocs) : elseIfs
+  pure $ DocCond allConds maybeElseInnerDocs
+
+condElseIfs :: DocParser [(Deref, [Doc])]
+condElseIfs = many $ do
+  (ControlElseIf elseIfDeref) <- elseIfControlStatement
+  elseIfInnerDocs <- docsParser
+  pure (elseIfDeref, elseIfInnerDocs)
 
 ifControlStatement :: DocParser Control
 ifControlStatement = primControlStatement $ \case
   ControlIf deref -> Just $ ControlIf deref
+  _ -> Nothing
+
+elseIfControlStatement :: DocParser Control
+elseIfControlStatement = primControlStatement $ \case
+  ControlElseIf deref -> Just $ ControlElseIf deref
   _ -> Nothing
 
 elseControlStatement :: DocParser Control
