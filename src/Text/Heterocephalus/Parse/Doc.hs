@@ -9,7 +9,7 @@ module Text.Heterocephalus.Parse.Doc where
 
 #if MIN_VERSION_base(4,9,0)
 #else
-import Control.Applicative ((*>), pure)
+import Control.Applicative ((*>), (<*), pure)
 #endif
 import Control.Monad (void)
 import Data.Data (Data)

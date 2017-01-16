@@ -9,7 +9,7 @@ module Text.Heterocephalus.Parse.Control where
 
 #if MIN_VERSION_base(4,9,0)
 #else
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (*>), (<*), pure)
 #endif
 import Control.Monad (guard, void)
 import Data.Char (isUpper)
