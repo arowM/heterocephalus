@@ -189,6 +189,16 @@ Only two type of control statements are provided.
 %{ endif }
 ```
 
+```
+%{ if (num < 30) }
+#{ num } is less than 30.
+%{ elseif (num <= 60) }
+#{ num } is between 30 and 60.
+%{ else }
+#{ num } is over 60.
+%{ endif }
+```
+
 ## Why "heterocephalus"?
 
 "Heterocephalus" is the scientific name of the [naked mole-rat](https://en.wikipedia.org/wiki/Naked_mole-rat).
