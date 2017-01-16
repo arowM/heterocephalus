@@ -14,6 +14,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (guard, void)
 import Data.Char (isUpper)
 import Data.Data (Data)
+import Data.Functor (($>))
 import Data.Typeable (Typeable)
 import Text.Parsec
        (Parsec, (<?>), (<|>), alphaNum, between, char, choice, eof, many,
@@ -31,6 +32,9 @@ data Control
   | ControlElse
   | ControlElseIf Deref
   | ControlEndIf
+  | ControlCase Deref
+  | ControlCaseOf Binding
+  | ControlEndCase
   | NoControl Content
   deriving (Data, Eq, Read, Show, Typeable)
 
@@ -82,58 +86,51 @@ parsePercent = do
 parseControl :: Char -> UserParser (Either String Control)
 parseControl c = do
   _ <- char c
-  (char '\\' >> return (Left [c])) <|>
-    (do ctrl <-
-          between (char '{') (char '}') $ do
-            spaces
-            x <- parseControl'
-            spaces
-            return x
-        return $ Right ctrl) <|>
-    return (Left [c])
+  let escape = char '\\' $> Left [c]
+  escape <|> (Right <$> parseControlBetweenBrackets) <|> return (Left [c])
 
+parseControlBetweenBrackets :: UserParser Control
+parseControlBetweenBrackets =
+  between (char '{') (char '}') $ spaces *> parseControl' <* spaces
 
 parseControl' :: UserParser Control
 parseControl' =
   try parseForall <|> try parseEndForall <|> try parseIf <|> try parseElseIf <|>
   try parseElse <|>
-  try parseEndIf
+  try parseEndIf <|>
+  try parseCase <|>
+  try parseCaseOf <|>
+  try parseEndCase
   where
     parseForall :: UserParser Control
     parseForall = do
-      _ <- string "forall"
-      spaces
+      string "forall" *> spaces
       (x, y) <- binding
-      return $ ControlForall x y
+      pure $ ControlForall x y
 
     parseEndForall :: UserParser Control
-    parseEndForall = do
-      _ <- string "endforall"
-      return $ ControlEndForall
+    parseEndForall = string "endforall" $> ControlEndForall
 
     parseIf :: UserParser Control
-    parseIf = do
-      _ <- string "if"
-      spaces
-      x <- parseDeref
-      return $ ControlIf x
+    parseIf = string "if" *> spaces *> fmap ControlIf parseDeref
 
     parseElseIf :: UserParser Control
-    parseElseIf = do
-      _ <- string "elseif"
-      spaces
-      x <- parseDeref
-      return $ ControlElseIf x
+    parseElseIf = string "elseif" *> spaces *> fmap ControlElseIf parseDeref
 
     parseElse :: UserParser Control
-    parseElse = do
-      _ <- string "else"
-      return $ ControlElse
+    parseElse = string "else" $> ControlElse
 
     parseEndIf :: UserParser Control
-    parseEndIf = do
-      _ <- string "endif"
-      return $ ControlEndIf
+    parseEndIf = string "endif" $> ControlEndIf
+
+    parseCase :: UserParser Control
+    parseCase = string "case" *> spaces *> fmap ControlCase parseDeref
+
+    parseCaseOf :: UserParser Control
+    parseCaseOf = string "of" *> spaces *> fmap ControlCaseOf identPattern
+
+    parseEndCase :: UserParser Control
+    parseEndCase = string "endcase" $> ControlEndCase
 
     binding :: UserParser (Deref, Binding)
     binding = do

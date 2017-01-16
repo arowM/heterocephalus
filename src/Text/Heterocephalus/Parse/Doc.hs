@@ -15,8 +15,8 @@ import Control.Monad (void)
 import Data.Data (Data)
 import Data.Typeable (Typeable)
 import Text.Parsec
-       (Parsec, ParseError, SourcePos, (<|>), incSourceLine, many,
-        optionMaybe, parse, tokenPrim)
+       (Parsec, ParseError, SourcePos, (<|>), eof, incSourceLine, many,
+        many1, optional, optionMaybe, parse, tokenPrim)
 import Text.Shakespeare.Base (Deref)
 
 import Text.Hamlet.Parse
@@ -24,40 +24,31 @@ import Text.Heterocephalus.Parse.Control (Content(..), Control(..))
 
 data Doc = DocForall Deref Binding [Doc]
          | DocCond [(Deref, [Doc])] (Maybe [Doc])
+         | DocCase Deref [(Binding, [Doc])]
          | DocContent Content
     deriving (Data, Eq, Read, Show, Typeable)
 
 type DocParser = Parsec [Control] ()
 
 parseDocFromControls :: [Control] -> Either ParseError [Doc]
-parseDocFromControls = parse docsParser ""
+parseDocFromControls = parse (docsParser <* eof) ""
 
 docsParser :: DocParser [Doc]
 docsParser = many docParser
 
 docParser :: DocParser Doc
-docParser = forallDoc <|> condDoc <|> contentDoc
-
-contentDoc :: DocParser Doc
-contentDoc = tokenPrim show position noControlToDoc
-  where
-    position :: SourcePos -> Control -> [Control] -> SourcePos
-    position sourcePos _ _ = incSourceLine sourcePos 1
-
-    noControlToDoc :: Control -> Maybe Doc
-    noControlToDoc (NoControl content) = Just $ DocContent content
-    noControlToDoc _ = Nothing
+docParser = forallDoc <|> condDoc <|> caseDoc <|> contentDoc
 
 forallDoc :: DocParser Doc
 forallDoc = do
-  (ControlForall deref binding) <- forallControlStatement
+  ControlForall deref binding <- forallControlStatement
   innerDocs <- docsParser
   void endforallControlStatement
   pure $ DocForall deref binding innerDocs
 
 condDoc :: DocParser Doc
 condDoc = do
-  (ControlIf ifDeref) <- ifControlStatement
+  ControlIf ifDeref <- ifControlStatement
   ifInnerDocs <- docsParser
   elseIfs <- condElseIfs
   maybeElseInnerDocs <- optionMaybe $ elseControlStatement *> docsParser
@@ -65,9 +56,27 @@ condDoc = do
   let allConds = (ifDeref, ifInnerDocs) : elseIfs
   pure $ DocCond allConds maybeElseInnerDocs
 
+caseDoc :: DocParser Doc
+caseDoc = do
+  ControlCase caseDeref <- caseControlStatement
+  -- Ignore a single, optional NoControl statement (with whitespace that will be
+  -- ignored).
+  optional contentDoc
+  caseOfs <- many1 $ do
+    ControlCaseOf caseBinding <- caseOfControlStatement
+    innerDocs <- docsParser
+    pure (caseBinding, innerDocs)
+  void endcaseControlStatement
+  pure $ DocCase caseDeref caseOfs
+
+contentDoc :: DocParser Doc
+contentDoc = primControlStatement $ \case
+  NoControl content -> Just $ DocContent content
+  _ -> Nothing
+
 condElseIfs :: DocParser [(Deref, [Doc])]
 condElseIfs = many $ do
-  (ControlElseIf elseIfDeref) <- elseIfControlStatement
+  ControlElseIf elseIfDeref <- elseIfControlStatement
   elseIfInnerDocs <- docsParser
   pure (elseIfDeref, elseIfInnerDocs)
 
@@ -91,11 +100,20 @@ endifControlStatement = primControlStatement $ \case
   ControlEndIf -> Just ControlEndIf
   _ -> Nothing
 
-primControlStatement :: (Control -> Maybe Control)-> DocParser Control
-primControlStatement = tokenPrim show incSourcePos
+caseControlStatement :: DocParser Control
+caseControlStatement = primControlStatement $ \case
+  ControlCase deref -> Just $ ControlCase deref
+  _ -> Nothing
 
-incSourcePos :: SourcePos -> a -> b -> SourcePos
-incSourcePos sourcePos _ _ = incSourceLine sourcePos 1
+caseOfControlStatement :: DocParser Control
+caseOfControlStatement = primControlStatement $ \case
+  ControlCaseOf binding -> Just $ ControlCaseOf binding
+  _ -> Nothing
+
+endcaseControlStatement :: DocParser Control
+endcaseControlStatement = primControlStatement $ \case
+  ControlEndCase -> Just ControlEndCase
+  _ -> Nothing
 
 forallControlStatement :: DocParser Control
 forallControlStatement = primControlStatement $ \case
@@ -106,3 +124,9 @@ endforallControlStatement :: DocParser Control
 endforallControlStatement = primControlStatement $ \case
   ControlEndForall -> Just ControlEndForall
   _ -> Nothing
+
+primControlStatement :: (Control -> Maybe x)-> DocParser x
+primControlStatement = tokenPrim show incSourcePos
+
+incSourcePos :: SourcePos -> a -> b -> SourcePos
+incSourcePos sourcePos _ _ = incSourceLine sourcePos 1
