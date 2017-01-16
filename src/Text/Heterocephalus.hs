@@ -269,8 +269,8 @@ compileHtmlFileWithDefault fp scope = compileFileWithDefault scope htmlSetting f
   >>> renderMarkup (let as = ["<a>", "b"] in [compileText|sample %{ forall a <- as }key: #{a}, %{ endforall }|])
   "sample key: <a>, key: b, "
 
-  >>> renderMarkup (let num=2 in [compileText|#{num} is %{ if even num }even number.%{ else }odd number.%{ endif }|])
-  "2 is even number."
+  >>> renderMarkup (let num=2 in [compileText|#{num} is %{ if even num }an even number.%{ elseif (num > 100) }big.%{ else }an odd number.%{ endif }|])
+  "2 is an even number."
  -}
 compileText :: QuasiQuoter
 compileText = compile textSetting
