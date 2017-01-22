@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version (future)
+----------------
+
+### New features
+
+* Add `case` control statement
+
 Version 1.0.2.0 (2016-12-13)
 ----------------------------
 
