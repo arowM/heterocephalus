@@ -147,9 +147,19 @@ parseControl' =
 
     ident :: UserParser Ident
     ident = do
-      i <- many1 (alphaNum <|> char '_' <|> char '\'')
+      i <- (many1 (alphaNum <|> char '_' <|> char '\'')) <|> try operator
       white
       return (Ident i) <?> "identifier"
+
+    -- | Parse an operator.  An operator is a sequence of characters in
+    -- 'operatorList' in between parenthesis.
+    operator :: UserParser String
+    operator = do
+      oper <- between (char '(') (char ')') . many1 $ oneOf operatorList
+      pure $ oper
+
+    operatorList :: String
+    operatorList = "!#$%&*+./<=>?@\\^|-~:"
 
     parens :: UserParser a -> UserParser a
     parens = between (char '(' >> white) (char ')' >> white)
@@ -180,7 +190,7 @@ parseControl' =
     isVariable (Ident []) = error "isVariable: bad identifier"
 
     isConstructor :: Ident -> Bool
-    isConstructor (Ident (x:_)) = isUpper x
+    isConstructor (Ident (x:_)) = isUpper x || elem x operatorList
     isConstructor (Ident []) = error "isConstructor: bad identifier"
 
     identPattern :: UserParser Binding
@@ -203,10 +213,7 @@ parseControl' =
 
         gcon :: Bool -> UserParser Binding
         gcon allowArgs = do
-          c <-
-            try $ do
-              c <- dataConstr
-              return c
+          c <- try dataConstr
           choice
             [ record c
             , fmap (BindConstr c) (guard allowArgs >> many apat)
