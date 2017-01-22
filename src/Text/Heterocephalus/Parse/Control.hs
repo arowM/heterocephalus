@@ -145,6 +145,8 @@ parseControl' =
     spaceTabs :: UserParser String
     spaceTabs = many $ oneOf " \t"
 
+    -- | Parse an indentifier.  This is an sequence of alphanumeric characters,
+    -- or an operator.
     ident :: UserParser Ident
     ident = do
       i <- (many1 (alphaNum <|> char '_' <|> char '\'')) <|> try operator
@@ -185,20 +187,33 @@ parseControl' =
     wildDots :: UserParser ()
     wildDots = string ".." >> white
 
+    -- | Return 'True' if 'Ident' is a variable.  Variables are defined as
+    -- starting with a lowercase letter.
     isVariable :: Ident -> Bool
     isVariable (Ident (x:_)) = not (isUpper x)
     isVariable (Ident []) = error "isVariable: bad identifier"
 
+    -- | Return 'True' if an 'Ident' is a constructor.  Constructors are
+    -- defined as either starting with an uppercase letter, or being an
+    -- operator.
     isConstructor :: Ident -> Bool
     isConstructor (Ident (x:_)) = isUpper x || elem x operatorList
     isConstructor (Ident []) = error "isConstructor: bad identifier"
 
+    -- | This function tries to parse an entire pattern binding with either
+    -- @'gcon' True@ or 'apat'.  For instance, in the pattern
+    -- @let Foo a b = ...@, this function tries to parse @Foo a b@ with 'gcon'.
+    -- In the pattern @let n = ...@, this function tries to parse @n@ with
+    -- 'apat'.
     identPattern :: UserParser Binding
     identPattern = gcon True <|> apat
       where
         apat :: UserParser Binding
         apat = choice [varpat, gcon False, parens tuplepat, brackets listpat]
 
+        -- | Parse a variable in a pattern.  For instance in, in a pattern like
+        -- @let Just n = ...@, this function would be what is used to parse the
+        -- @n@.  This function also handles aliases with @\@@.
         varpat :: UserParser Binding
         varpat = do
           v <-
@@ -211,6 +226,31 @@ parseControl' =
             b <- apat
             return (BindAs v b) <?> "variable"
 
+        -- | This function tries to parse an entire pattern binding.  For
+        -- instance, in the pattern @let Foo a b = ...@, this function tries to
+        -- parse @Foo a b@.
+        --
+        -- This function first tries to parse a data contructor (using
+        -- 'dataConstr').  In the example above, that would be like parsing
+        -- @Foo@.
+        --
+        -- Then, the function tries to do two different things.
+        --
+        -- 1. It tries to parse record syntax with 'record'.  In a pattern like
+        -- @let Foo{foo1 = 3, foo2 = "hello"} = ...@, it would parse the
+        -- @{foo1 = 3, foo2 = "hello"}@ part.
+        --
+        -- 2. If parsing the record syntax fails, it then tries to parse
+        -- many normal patterns with 'apat'.  In a pattern like
+        -- @let Foo a b = ...@, it would be like parsing the @a b@ part.
+        --
+        -- If that fails, then it just returns the original data contructor
+        -- with no arguments.
+        --
+        -- The 'Bool' argument determines whether or not it tries to parse
+        -- normal patterns in 2.  If the boolean argument is 'True', then it
+        -- tries parsing normal patterns in 2.  If the boolean argument is
+        -- 'False', then 2 is skipped altogether.
         gcon :: Bool -> UserParser Binding
         gcon allowArgs = do
           c <- try dataConstr
@@ -221,6 +261,7 @@ parseControl' =
             ] <?>
             "constructor"
 
+        -- | Parse a possibly qualified identifier using 'ident'.
         dataConstr :: UserParser DataConstr
         dataConstr = do
           p <- dcPiece
