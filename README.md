@@ -222,6 +222,12 @@ no nums.
 %{ endif }
 ```
 
+#### Why we do not provide `maybe` and `with`?
+
+TODO
+
+Discussions about this topic is on [issue #9](https://github.com/arowM/heterocephalus/issues/9).
+
 ## Why "heterocephalus"?
 
 "Heterocephalus" is the scientific name of the [naked mole-rat](https://en.wikipedia.org/wiki/Naked_mole-rat).

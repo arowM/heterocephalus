@@ -1,7 +1,7 @@
 Change Log
 ==========
 
-Version (future)
+Version 1.0.3.0 (2017-01-24)
 ----------------
 
 ### New features
