@@ -10,9 +10,9 @@ module Text.Hamlet.Parse
     )
     where
 
-import Text.Shakespeare.Base
 import Data.Data (Data)
 import Data.Typeable (Typeable)
+import Text.Shakespeare.Base (Ident(..))
 
 data Binding = BindVar Ident
              | BindAs Ident Binding

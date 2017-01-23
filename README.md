@@ -37,7 +37,8 @@ CSS
 and JavaScript
 ([Julius](https://hackage.haskell.org/package/shakespeare-2.0.11.2/docs/Text-Julius.html)).
 If you use these original markup languages, it is possible to use control
-statements like `forall` (for looping) and `if` (for conditionals).
+statements like `forall` (for looping), `if` (for conditionals), and `case`
+(for case-splitting).
 
 However, if you're using any other markup language (like
 [pug](https://pugjs.org), [slim](http://slim-lang.com/),
@@ -45,7 +46,7 @@ However, if you're using any other markup language (like
 provides you with the
 [Text.Shakespeare.Text](https://hackage.haskell.org/package/shakespeare/docs/Text-Shakespeare-Text.html)
 module.  This gives you variable interpolation, but no control statements like
-`forall` or `if`.
+`forall`, `if`, or `case`.
 
 [`Haiji`](https://hackage.haskell.org/package/haiji) is another interesting
 library.  It has all the features we require, but its templates take a very
@@ -66,18 +67,18 @@ Here are the main features of this module.
 
 * __DO__ expand the template literal on compile time
 
-* __DO__ provide a way to use `forall` and `if` in the template
+* __DO__ provide a way to use `forall`, `if`, and `case` statments in the template
 
     `Text.Shakespeare.Text.text` has a way to do variable interpolation, but no
     way to use these types of control statements.
 
-* __DO NOT__ enforce templates to obey a peculiar syntax
+* __DO NOT__ enforce that templates obey a peculiar syntax
 
     Shakespeare templates make you use their original style (Hamlet, Cassius,
     Lucius, Julius, etc).  The
     [`Text.Shakespeare.Text.text`](https://hackage.haskell.org/package/shakespeare/docs/Text-Shakespeare-Text.html#v:text)
     function does not require you to use any particular style, but it does not
-    have control statements like `forall` and `if`.
+    have control statements like `forall`, `if` and `case`.
 
     This makes it impossible to use Shakespeare with another template engine
     such as `pug` in front end side.  It is not suitable for recent rich front
@@ -93,7 +94,7 @@ Here are the main features of this module.
     Other template engines like [EDE](https://hackage.haskell.org/package/ede)
     provide rich control statements like importing external files.
     Heterocephalus does not provide control statements like this because it is
-    supposed to be used with a rich front-end template engine (like pug, slim,
+    meant to be used with a rich front-end template engine (like pug, slim,
     etc).
 
 ## Usage
@@ -196,6 +197,28 @@ Only two type of control statements are provided.
 #{ num } is between 30 and 60.
 %{ else }
 #{ num } is over 60.
+%{ endif }
+```
+
+#### Case
+
+```
+%{ case maybeNum }
+%{ of Just 3 }
+num is 3.
+%{ of Just num }
+num is not 3, but #{num}.
+%{ of Nothing }
+num is not anything.
+%{ endif }
+```
+
+```
+%{ case nums }
+%{ of (:) n _ }
+first num is #{n}.
+%{ of [] }
+no nums.
 %{ endif }
 ```
 

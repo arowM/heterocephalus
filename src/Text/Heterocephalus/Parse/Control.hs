@@ -9,11 +9,12 @@ module Text.Heterocephalus.Parse.Control where
 
 #if MIN_VERSION_base(4,9,0)
 #else
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (*>), (<*), pure)
 #endif
 import Control.Monad (guard, void)
 import Data.Char (isUpper)
 import Data.Data (Data)
+import Data.Functor (($>))
 import Data.Typeable (Typeable)
 import Text.Parsec
        (Parsec, (<?>), (<|>), alphaNum, between, char, choice, eof, many,
@@ -31,6 +32,9 @@ data Control
   | ControlElse
   | ControlElseIf Deref
   | ControlEndIf
+  | ControlCase Deref
+  | ControlCaseOf Binding
+  | ControlEndCase
   | NoControl Content
   deriving (Data, Eq, Read, Show, Typeable)
 
@@ -82,58 +86,51 @@ parsePercent = do
 parseControl :: Char -> UserParser (Either String Control)
 parseControl c = do
   _ <- char c
-  (char '\\' >> return (Left [c])) <|>
-    (do ctrl <-
-          between (char '{') (char '}') $ do
-            spaces
-            x <- parseControl'
-            spaces
-            return x
-        return $ Right ctrl) <|>
-    return (Left [c])
+  let escape = char '\\' $> Left [c]
+  escape <|> (Right <$> parseControlBetweenBrackets) <|> return (Left [c])
 
+parseControlBetweenBrackets :: UserParser Control
+parseControlBetweenBrackets =
+  between (char '{') (char '}') $ spaces *> parseControl' <* spaces
 
 parseControl' :: UserParser Control
 parseControl' =
   try parseForall <|> try parseEndForall <|> try parseIf <|> try parseElseIf <|>
   try parseElse <|>
-  try parseEndIf
+  try parseEndIf <|>
+  try parseCase <|>
+  try parseCaseOf <|>
+  try parseEndCase
   where
     parseForall :: UserParser Control
     parseForall = do
-      _ <- string "forall"
-      spaces
+      string "forall" *> spaces
       (x, y) <- binding
-      return $ ControlForall x y
+      pure $ ControlForall x y
 
     parseEndForall :: UserParser Control
-    parseEndForall = do
-      _ <- string "endforall"
-      return $ ControlEndForall
+    parseEndForall = string "endforall" $> ControlEndForall
 
     parseIf :: UserParser Control
-    parseIf = do
-      _ <- string "if"
-      spaces
-      x <- parseDeref
-      return $ ControlIf x
+    parseIf = string "if" *> spaces *> fmap ControlIf parseDeref
 
     parseElseIf :: UserParser Control
-    parseElseIf = do
-      _ <- string "elseif"
-      spaces
-      x <- parseDeref
-      return $ ControlElseIf x
+    parseElseIf = string "elseif" *> spaces *> fmap ControlElseIf parseDeref
 
     parseElse :: UserParser Control
-    parseElse = do
-      _ <- string "else"
-      return $ ControlElse
+    parseElse = string "else" $> ControlElse
 
     parseEndIf :: UserParser Control
-    parseEndIf = do
-      _ <- string "endif"
-      return $ ControlEndIf
+    parseEndIf = string "endif" $> ControlEndIf
+
+    parseCase :: UserParser Control
+    parseCase = string "case" *> spaces *> fmap ControlCase parseDeref
+
+    parseCaseOf :: UserParser Control
+    parseCaseOf = string "of" *> spaces *> fmap ControlCaseOf identPattern
+
+    parseEndCase :: UserParser Control
+    parseEndCase = string "endcase" $> ControlEndCase
 
     binding :: UserParser (Deref, Binding)
     binding = do
@@ -148,11 +145,23 @@ parseControl' =
     spaceTabs :: UserParser String
     spaceTabs = many $ oneOf " \t"
 
+    -- | Parse an indentifier.  This is an sequence of alphanumeric characters,
+    -- or an operator.
     ident :: UserParser Ident
     ident = do
-      i <- many1 (alphaNum <|> char '_' <|> char '\'')
+      i <- (many1 (alphaNum <|> char '_' <|> char '\'')) <|> try operator
       white
       return (Ident i) <?> "identifier"
+
+    -- | Parse an operator.  An operator is a sequence of characters in
+    -- 'operatorList' in between parenthesis.
+    operator :: UserParser String
+    operator = do
+      oper <- between (char '(') (char ')') . many1 $ oneOf operatorList
+      pure $ oper
+
+    operatorList :: String
+    operatorList = "!#$%&*+./<=>?@\\^|-~:"
 
     parens :: UserParser a -> UserParser a
     parens = between (char '(' >> white) (char ')' >> white)
@@ -178,20 +187,33 @@ parseControl' =
     wildDots :: UserParser ()
     wildDots = string ".." >> white
 
+    -- | Return 'True' if 'Ident' is a variable.  Variables are defined as
+    -- starting with a lowercase letter.
     isVariable :: Ident -> Bool
     isVariable (Ident (x:_)) = not (isUpper x)
     isVariable (Ident []) = error "isVariable: bad identifier"
 
+    -- | Return 'True' if an 'Ident' is a constructor.  Constructors are
+    -- defined as either starting with an uppercase letter, or being an
+    -- operator.
     isConstructor :: Ident -> Bool
-    isConstructor (Ident (x:_)) = isUpper x
+    isConstructor (Ident (x:_)) = isUpper x || elem x operatorList
     isConstructor (Ident []) = error "isConstructor: bad identifier"
 
+    -- | This function tries to parse an entire pattern binding with either
+    -- @'gcon' True@ or 'apat'.  For instance, in the pattern
+    -- @let Foo a b = ...@, this function tries to parse @Foo a b@ with 'gcon'.
+    -- In the pattern @let n = ...@, this function tries to parse @n@ with
+    -- 'apat'.
     identPattern :: UserParser Binding
     identPattern = gcon True <|> apat
       where
         apat :: UserParser Binding
         apat = choice [varpat, gcon False, parens tuplepat, brackets listpat]
 
+        -- | Parse a variable in a pattern.  For instance in, in a pattern like
+        -- @let Just n = ...@, this function would be what is used to parse the
+        -- @n@.  This function also handles aliases with @\@@.
         varpat :: UserParser Binding
         varpat = do
           v <-
@@ -204,12 +226,34 @@ parseControl' =
             b <- apat
             return (BindAs v b) <?> "variable"
 
+        -- | This function tries to parse an entire pattern binding.  For
+        -- instance, in the pattern @let Foo a b = ...@, this function tries to
+        -- parse @Foo a b@.
+        --
+        -- This function first tries to parse a data contructor (using
+        -- 'dataConstr').  In the example above, that would be like parsing
+        -- @Foo@.
+        --
+        -- Then, the function tries to do two different things.
+        --
+        -- 1. It tries to parse record syntax with 'record'.  In a pattern like
+        -- @let Foo{foo1 = 3, foo2 = "hello"} = ...@, it would parse the
+        -- @{foo1 = 3, foo2 = "hello"}@ part.
+        --
+        -- 2. If parsing the record syntax fails, it then tries to parse
+        -- many normal patterns with 'apat'.  In a pattern like
+        -- @let Foo a b = ...@, it would be like parsing the @a b@ part.
+        --
+        -- If that fails, then it just returns the original data contructor
+        -- with no arguments.
+        --
+        -- The 'Bool' argument determines whether or not it tries to parse
+        -- normal patterns in 2.  If the boolean argument is 'True', then it
+        -- tries parsing normal patterns in 2.  If the boolean argument is
+        -- 'False', then 2 is skipped altogether.
         gcon :: Bool -> UserParser Binding
         gcon allowArgs = do
-          c <-
-            try $ do
-              c <- dataConstr
-              return c
+          c <- try dataConstr
           choice
             [ record c
             , fmap (BindConstr c) (guard allowArgs >> many apat)
@@ -217,6 +261,7 @@ parseControl' =
             ] <?>
             "constructor"
 
+        -- | Parse a possibly qualified identifier using 'ident'.
         dataConstr :: UserParser DataConstr
         dataConstr = do
           p <- dcPiece

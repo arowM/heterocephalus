@@ -67,9 +67,9 @@ import Language.Haskell.TH.Quote
        (QuasiQuoter(QuasiQuoter), quoteExp, quoteDec, quotePat, quoteType)
 #if MIN_VERSION_template_haskell(2,9,0)
 import Language.Haskell.TH.Syntax
-       (Con(..), Dec(..), Exp(..), Info(..), Lit(..), Name(..), Pat(..),
-        Q, Stmt(..), lookupValueName, mkName, nameBase, newName,
-        qAddDependentFile, qRunIO, reify)
+       (Body(..), Con(..), Dec(..), Exp(..), Info(..), Lit(..), Match(..),
+        Name(..), Pat(..), Q, Stmt(..), lookupValueName, mkName, nameBase,
+        newName, qAddDependentFile, qRunIO, reify)
 #else
 import Language.Haskell.TH.Syntax
 #endif
@@ -486,6 +486,17 @@ docToExp set scope (DocCond conds final) = do
       let d' = derefToExp ((specialOrIdent, VarE 'or) : scope) d
       docs' <- docsToExp set scope docs
       return $ TupE [d', docs']
+docToExp set scope (DocCase deref cases) = do
+    let exp_ = derefToExp scope deref
+    matches <- mapM toMatch cases
+    return $ CaseE exp_ matches
+  where
+    toMatch :: (Binding, [Doc]) -> Q Match
+    toMatch (idents, inside) = do
+        (pat, extraScope) <- bindingPattern idents
+        let scope' = extraScope ++ scope
+        insideExp <- docsToExp set scope' inside
+        return $ Match pat (NormalB insideExp) []
 docToExp set v (DocContent c) = contentToExp set v c
 
 contentToExp :: HeterocephalusSetting -> Scope -> Content -> Q Exp
