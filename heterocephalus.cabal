@@ -34,8 +34,8 @@ library
                      , Text.Heterocephalus.Parse.Control
                      , Text.Heterocephalus.Parse.Doc
   build-depends:       base >= 4.7 && < 5
-                     , blaze-html >= 0.8 && < 0.9
-                     , blaze-markup >= 0.7 && < 0.8
+                     , blaze-html >= 0.8 && < 0.10
+                     , blaze-markup >= 0.7 && < 0.9
                      , containers >= 0.5 && < 0.6
                      , dlist >= 0.7.1.1
                      , parsec >= 3.1 && < 3.2
