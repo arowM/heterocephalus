@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version 1.0.4.0 (2017-02-07)
+----------------
+
+### New features
+
+* Expose htmlSetting and textSetting
+
 Version 1.0.3.0 (2017-01-24)
 ----------------
 
