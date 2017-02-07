@@ -36,7 +36,9 @@ module Text.Heterocephalus
   , overwrite
 
   -- * low-level
-  , HeterocephalusSetting(escapeExp)
+  , HeterocephalusSetting(..)
+  , textSetting
+  , htmlSetting
   , DefaultScope
   , compile
   , compileWith
@@ -358,18 +360,26 @@ overwriteScope (Ident str) qexp = do
     Just x -> varE x
     Nothing -> qexp
 
+{-| Settings that are used when processing heterocephalus templates.
+ -}
 data HeterocephalusSetting = HeterocephalusSetting
   { escapeExp :: Q Exp
+  -- ^ Template variables are passed to 'escapeExp' in the output.  This allows
+  -- things like escaping HTML entities.  (See 'htmlSetting'.)
   }
 
 {-| A setting that escapes template variables for Html
+
+This sets 'escapeExp' to 'toHtml'.
  -}
 htmlSetting :: HeterocephalusSetting
 htmlSetting = HeterocephalusSetting
   { escapeExp = [|toHtml|]
   }
 
-{-| A setting that DOES NOT escape template variables
+{-| A setting that DOES NOT escape template variables.
+
+This sets 'escapeExp' to 'preEscapedToMarkup'.
  -}
 textSetting :: HeterocephalusSetting
 textSetting = HeterocephalusSetting
