@@ -3,11 +3,6 @@
 
 module Text.Heterocephalus.Parse.Option where
 
-#if MIN_VERSION_base(4,9,0)
-#else
-import Control.Applicative ((<$>), (*>), (<*), pure)
-#endif
-
 import Control.Monad.Reader (MonadReader, reader)
 
 data ParseOptions = ParseOptions
