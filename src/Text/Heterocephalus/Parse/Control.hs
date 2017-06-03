@@ -12,18 +12,23 @@ module Text.Heterocephalus.Parse.Control where
 import Control.Applicative ((<$>), (*>), (<*), pure)
 #endif
 import Control.Monad (guard, void)
+import Control.Monad.Reader (Reader, runReaderT)
 import Data.Char (isUpper)
 import Data.Data (Data)
 import Data.Functor (($>))
+import Data.Functor.Identity (runIdentity)
 import Data.Typeable (Typeable)
 import Text.Parsec
-       (Parsec, (<?>), (<|>), alphaNum, between, char, choice, eof, many,
-        many1, manyTill, noneOf, oneOf, option, optional, parse, sepBy,
-        skipMany, spaces, string, try)
+       (Parsec, ParsecT, (<?>), (<|>), alphaNum, between, char, choice,
+        eof, many, many1, manyTill, mkPT, noneOf, oneOf, option, optional,
+        runParsecT, runParserT, sepBy, skipMany, spaces, string,
+        try)
 import Text.Shakespeare.Base
-       (Ident(Ident), Deref, parseDeref, parseHash)
+       (Ident(Ident), Deref, parseDeref, parseVar)
 
 import Text.Hamlet.Parse
+import Text.Heterocephalus.Parse.Option
+       (ParseOptions, getControlPrefix, getVariablePrefix)
 
 data Control
   = ControlForall Deref Binding
@@ -42,52 +47,62 @@ data Content = ContentRaw String
              | ContentVar Deref
     deriving (Data, Eq, Read, Show, Typeable)
 
-type UserParser = Parsec String ()
+type UserParser = ParsecT String () (Reader ParseOptions)
 
-parseLineControl :: String -> Either String [Control]
-parseLineControl s =
-  case parse lineControl s s of
-    Left e -> Left $ show e
-    Right x -> Right x
+parseLineControl :: ParseOptions -> String -> Either String [Control]
+parseLineControl opts s =
+  let readerT = runParserT lineControl () "" s
+      res = runIdentity $ runReaderT readerT opts
+  in case res of
+       Left e -> Left $ show e
+       Right x -> Right x
 
 lineControl :: UserParser [Control]
 lineControl = manyTill control $ try eof >> return ()
 
 control :: UserParser Control
-control = controlHash <|> controlPercent <|> controlReg
+control = noControlVariable <|> controlStatement <|> noControlRaw
   where
-    controlPercent :: UserParser Control
-    controlPercent = do
-      x <- parsePercent
+    controlStatement :: UserParser Control
+    controlStatement = do
+      x <- parseControlStatement
       case x of
         Left str -> return (NoControl $ ContentRaw str)
         Right ctrl -> return ctrl
 
-    controlHash :: UserParser Control
-    controlHash = do
-      x <- parseHash
+    noControlVariable :: UserParser Control
+    noControlVariable = do
+      variablePrefix <- getVariablePrefix
+      x <- identityToReader $ parseVar variablePrefix
       return . NoControl $
         case x of
           Left str -> ContentRaw str
           Right deref -> ContentVar deref
 
-    controlReg :: UserParser Control
-    controlReg = (NoControl . ContentRaw) <$> many (noneOf "#%")
+    noControlRaw :: UserParser Control
+    noControlRaw = do
+      controlPrefix <- getControlPrefix
+      variablePrefix <- getVariablePrefix
+      (NoControl . ContentRaw) <$>
+        many (noneOf [controlPrefix, variablePrefix])
 
-parsePercent :: UserParser (Either String Control)
-parsePercent = do
-  a <- parseControl '%'
+parseControlStatement :: UserParser (Either String Control)
+parseControlStatement = do
+  a <- parseControl
   optional eol
   return a
  where
   eol :: UserParser ()
   eol = void (char '\n') <|> void (string "\r\n")
 
-parseControl :: Char -> UserParser (Either String Control)
-parseControl c = do
-  _ <- char c
-  let escape = char '\\' $> Left [c]
-  escape <|> (Right <$> parseControlBetweenBrackets) <|> return (Left [c])
+parseControl :: UserParser (Either String Control)
+parseControl = do
+  controlPrefix <- getControlPrefix
+  void $ char controlPrefix
+  let escape = char '\\' $> Left [controlPrefix]
+  escape <|>
+    (Right <$> parseControlBetweenBrackets) <|>
+    return (Left [controlPrefix])
 
 parseControlBetweenBrackets :: UserParser Control
 parseControlBetweenBrackets =
@@ -112,10 +127,14 @@ parseControl' =
     parseEndForall = string "endforall" $> ControlEndForall
 
     parseIf :: UserParser Control
-    parseIf = string "if" *> spaces *> fmap ControlIf parseDeref
+    parseIf =
+      string "if" *> spaces *> fmap ControlIf (identityToReader parseDeref)
 
     parseElseIf :: UserParser Control
-    parseElseIf = string "elseif" *> spaces *> fmap ControlElseIf parseDeref
+    parseElseIf =
+      string "elseif" *>
+      spaces *>
+      fmap ControlElseIf (identityToReader parseDeref)
 
     parseElse :: UserParser Control
     parseElse = string "else" $> ControlElse
@@ -124,7 +143,10 @@ parseControl' =
     parseEndIf = string "endif" $> ControlEndIf
 
     parseCase :: UserParser Control
-    parseCase = string "case" *> spaces *> fmap ControlCase parseDeref
+    parseCase =
+      string "case" *>
+      spaces *>
+      fmap ControlCase (identityToReader parseDeref)
 
     parseCaseOf :: UserParser Control
     parseCaseOf = string "of" *> spaces *> fmap ControlCaseOf identPattern
@@ -138,7 +160,7 @@ parseControl' =
       spaces
       _ <- string "<-"
       spaces
-      x <- parseDeref
+      x <- identityToReader parseDeref
       _ <- spaceTabs
       return (x, y)
 
@@ -319,3 +341,7 @@ parseControl' =
 
         listpat :: UserParser Binding
         listpat = BindList <$> identPattern `sepBy` comma
+
+identityToReader :: Parsec String () a -> UserParser a
+identityToReader p =
+  mkPT $ pure . fmap (pure . runIdentity) . runIdentity . runParsecT p

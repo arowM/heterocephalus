@@ -39,6 +39,9 @@ module Text.Heterocephalus
   , HeterocephalusSetting(..)
   , textSetting
   , htmlSetting
+  , ParseOptions(..)
+  , defaultParseOptions
+  , createParseOptions
   , DefaultScope
   , compile
   , compileWith
@@ -85,7 +88,8 @@ import Text.Shakespeare.Base
        (Deref, Ident(..), Scope, derefToExp, readUtf8File)
 
 import Text.Heterocephalus.Parse
-       (Doc(..), Content(..), docFromString)
+       (Doc(..), Content(..), ParseOptions(..), createParseOptions,
+        defaultParseOptions, docFromString)
 
 {- $setup
   >>> :set -XTemplateHaskell -XQuasiQuotes
@@ -332,6 +336,20 @@ compileFileWithDefault scope' set fp = do
   contents <- fmap TL.unpack $ qRunIO $ readUtf8File fp
   compileFromStringWithDefault scope' set contents
 
+{-| Same as 'compileFile', but just compile the 'String' given.
+
+  >>> let as = ["<a>", "b"]
+  >>> let template = "sample %{ forall a <- as }key: #{a}, %{ endforall }"
+  >>> renderMarkup $(compileFromString textSetting template)
+  "sample key: <a>, key: b, "
+
+  >>> let as = ["<a>", "b"]
+  >>> let options = createParseOptions '|' '?'
+  >>> let setting = textSetting { parseOptions = options }
+  >>> let template = "sample |{ forall a <- as }key: ?{a}, |{ endforall }"
+  >>> renderMarkup $(compileFromString setting template)
+  "sample key: <a>, key: b, "
+-}
 compileFromString :: HeterocephalusSetting -> String -> Q Exp
 compileFromString = compileFromStringWithDefault []
 
@@ -341,7 +359,7 @@ compileFromStringWith scopeM set s = do
     forM defScope $ \(ident, qexp) -> (ident, ) <$> overwriteScope ident qexp
   owScope' <-
     forM owScope $ \(ident, qexp) -> (ident, ) <$> qexp
-  docsToExp set (owScope' ++ defScope') $ docFromString s
+  docsToExp set (owScope' ++ defScope') $ docFromString (parseOptions set) s
  where
   (defDList, owDList) = runScopeM scopeM
   defScope = DList.toList defDList
@@ -351,7 +369,7 @@ compileFromStringWithDefault :: DefaultScope -> HeterocephalusSetting -> String 
 compileFromStringWithDefault scope' set s = do
   scope <-
     forM scope' $ \(ident, qexp) -> (ident, ) <$> overwriteScope ident qexp
-  docsToExp set scope $ docFromString s
+  docsToExp set scope $ docFromString (parseOptions set) s
 
 overwriteScope :: Ident -> Q Exp -> Q Exp
 overwriteScope (Ident str) qexp = do
@@ -366,6 +384,7 @@ data HeterocephalusSetting = HeterocephalusSetting
   { escapeExp :: Q Exp
   -- ^ Template variables are passed to 'escapeExp' in the output.  This allows
   -- things like escaping HTML entities.  (See 'htmlSetting'.)
+  , parseOptions :: ParseOptions
   }
 
 {-| A setting that escapes template variables for Html
@@ -375,6 +394,7 @@ This sets 'escapeExp' to 'toHtml'.
 htmlSetting :: HeterocephalusSetting
 htmlSetting = HeterocephalusSetting
   { escapeExp = [|toHtml|]
+  , parseOptions = defaultParseOptions
   }
 
 {-| A setting that DOES NOT escape template variables.
@@ -384,6 +404,7 @@ This sets 'escapeExp' to 'preEscapedToMarkup'.
 textSetting :: HeterocephalusSetting
 textSetting = HeterocephalusSetting
   { escapeExp = [|preEscapedToMarkup|]
+  , parseOptions = defaultParseOptions
   }
 
 type DefaultScope = [(Ident, Q Exp)]
