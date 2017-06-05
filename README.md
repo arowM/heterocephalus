@@ -26,7 +26,7 @@ webpack, npm, etc, then this library can help you!
 There are many Haskell template engines today.
 [Shakespeare](http://hackage.haskell.org/package/shakespeare) is great because
 it checks template variables at compile time.  Using Shakespeare, it's not
-possible to for the template file to cause a runtime-error.
+possible for the template file to cause a runtime-error.
 
 Shakespeare provides its own original ways of writing HTML
 ([Hamlet](https://hackage.haskell.org/package/shakespeare/docs/Text-Hamlet.html)),
@@ -53,7 +53,7 @@ library.  It has all the features we require, but its templates take a very
 [long time to compile](https://github.com/blueimpact/kucipong/pull/7) with
 GHC >= 7.10.
 
-Hetercephalus fills this missing niche. It gives you variable interpolation
+Heterocephalus fills this missing niche. It gives you variable interpolation
 along with control statements that can be used with any markup language.  Its
 compile times are reasonable.
 
