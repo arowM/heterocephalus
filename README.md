@@ -210,7 +210,7 @@ num is 3.
 num is not 3, but #{num}.
 %{ of Nothing }
 num is not anything.
-%{ endif }
+%{ endcase }
 ```
 
 ```
@@ -219,7 +219,7 @@ num is not anything.
 first num is #{n}.
 %{ of [] }
 no nums.
-%{ endif }
+%{ endcase }
 ```
 
 #### Why we do not provide `maybe` and `with`?
