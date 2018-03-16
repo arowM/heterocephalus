@@ -47,6 +47,10 @@ library
                      , transformers
   ghc-options:         -Wall
   default-language:    Haskell2010
+  if impl(ghc >= 8.0)
+    ghc-options: -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances
+  else
+    build-depends: fail == 4.9.*, semigroups == 0.17.*
 
 test-suite heterocephalus-test
   type:                exitcode-stdio-1.0

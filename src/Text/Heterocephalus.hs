@@ -64,6 +64,7 @@ import Data.DList (DList)
 import qualified Data.DList as DList
 import qualified Data.Foldable as F
 import Data.List (intercalate)
+import qualified Data.Semigroup as Sem
 import Data.String (IsString(..))
 import Data.Text (Text, pack)
 import qualified Data.Text.Lazy as TL
@@ -433,9 +434,14 @@ runScopeM (Overwrite ident qexp next) =
 runScopeM (PureScopeM _) =
   (mempty, mempty)
 
+instance Sem.Semigroup (ScopeM ()) where
+  a <> b  = a >> b
+
 instance Monoid (ScopeM ()) where
   mempty = pure ()
-  mappend a b = a >> b
+#if !(MIN_VERSION_base(4,11,0))
+  mappend = (Sem.<>)
+#endif
 
 instance Functor ScopeM where
   fmap f (SetDefault ident qexp next) =
