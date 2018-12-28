@@ -37,7 +37,7 @@ library
   build-depends:       base >= 4.7 && < 5
                      , blaze-html >= 0.8 && < 0.10
                      , blaze-markup >= 0.7 && < 0.9
-                     , containers >= 0.5 && < 0.6
+                     , containers >= 0.5
                      , dlist >= 0.7.1.1
                      , mtl
                      , parsec >= 3.1 && < 3.2
@@ -45,12 +45,8 @@ library
                      , template-haskell >= 2.7 && < 3
                      , text >= 1.2 && < 1.3
                      , transformers
-  ghc-options:         -Wall
+  ghc-options:         -Wall -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances
   default-language:    Haskell2010
-  if impl(ghc >= 8.0)
-    ghc-options: -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances
-  else
-    build-depends: fail == 4.9.*, semigroups == 0.17.*
 
 test-suite heterocephalus-test
   type:                exitcode-stdio-1.0
