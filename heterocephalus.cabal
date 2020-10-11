@@ -1,6 +1,6 @@
 name:                heterocephalus
 version:             1.0.5.4
-synopsis:            A type-safe template engine for working with popular front end development tools
+synopsis:            A type-safe template engine for working with front end development tools
 description:
     Recent front end development tools and languages are growing fast and have
     quite a complicated ecosystem. Few front end developers want to be forced
