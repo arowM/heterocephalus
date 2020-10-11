@@ -34,17 +34,17 @@ library
                      , Text.Heterocephalus.Parse.Control
                      , Text.Heterocephalus.Parse.Doc
                      , Text.Heterocephalus.Parse.Option
-  build-depends:       base >= 4.7 && < 5
-                     , blaze-html >= 0.8 && < 0.10
-                     , blaze-markup >= 0.7 && < 0.9
+  build-depends:       base >= 4.10 && < 5
+                     , blaze-html >= 0.9
+                     , blaze-markup >= 0.8
                      , containers >= 0.5
-                     , dlist >= 0.7.1.1
-                     , mtl
-                     , parsec >= 3.1 && < 3.2
-                     , shakespeare >= 2.0 && < 2.1
-                     , template-haskell >= 2.7 && < 3
-                     , text >= 1.2 && < 1.3
-                     , transformers
+                     , dlist >= 0.8
+                     , mtl >= 2.2
+                     , parsec >= 3.1
+                     , shakespeare >= 2.0
+                     , template-haskell >= 2.12
+                     , text >= 1.2
+                     , transformers >= 0.5
   ghc-options:         -Wall -Wcompat -Wnoncanonical-monad-instances
   default-language:    Haskell2010
 
