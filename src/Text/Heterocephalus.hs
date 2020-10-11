@@ -522,7 +522,14 @@ docToExp set scope (DocCond conds final) = do
     go (d, docs) = do
       let d' = derefToExp ((specialOrIdent, VarE 'or) : scope) d
       docs' <- docsToExp set scope docs
-      return $ TupE [d', docs']
+      return $ nonUnaryTupE [d', docs']
+      where
+        nonUnaryTupE :: [Exp] -> Exp
+        nonUnaryTupE es  = TupE $
+#if MIN_VERSION_template_haskell(2,16,0)
+                                 map Just
+#endif
+                                 es
 docToExp set scope (DocCase deref cases) = do
     let exp_ = derefToExp scope deref
     matches <- mapM toMatch cases
