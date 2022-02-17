@@ -79,6 +79,7 @@ import Language.Haskell.TH.Syntax
 #else
 import Language.Haskell.TH.Syntax
 #endif
+import TemplateHaskell.Compat.V0208
 import Text.Blaze (preEscapedToMarkup)
 import Text.Blaze.Html (toHtml)
 import Text.Blaze.Internal (preEscapedText)
@@ -495,7 +496,7 @@ docsToExp set scope docs = do
   case exps of
     [] -> [|return ()|]
     [x] -> return x
-    _ -> return $ DoE $ map NoBindS exps
+    _ -> return $ doE $ map NoBindS exps
 
 docToExp :: HeterocephalusSetting -> Scope -> Doc -> Q Exp
 docToExp set scope (DocForall list idents inside) = do
@@ -525,11 +526,7 @@ docToExp set scope (DocCond conds final) = do
       return $ nonUnaryTupE [d', docs']
       where
         nonUnaryTupE :: [Exp] -> Exp
-        nonUnaryTupE es  = TupE $
-#if MIN_VERSION_template_haskell(2,16,0)
-                                 map Just
-#endif
-                                 es
+        nonUnaryTupE es  = tupE es
 docToExp set scope (DocCase deref cases) = do
     let exp_ = derefToExp scope deref
     matches <- mapM toMatch cases
