@@ -1,8 +1,7 @@
 name: test
 on:
   pull_request:
-    types:
-      - [opened, reopened]
+    types: [opened, reopened]
 jobs:
   test:
     runs-on: ${{ matrix.os }}
