@@ -1,0 +1,32 @@
+name: test
+on:
+  pull_request:
+    types:
+      - [opened, reopened]
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        ghc: ['8.10.4', '9.0.2', '9.2.1', '9.2.2']
+        cabal: ['3.2.1.0', '3.4.1.0', '3.6.0.0', '3.6.3.0']
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+    name: Haskell GHC ${{ matrix.ghc }} sample
+    steps:
+      - name: Cache .cabal
+        uses: actions/cache@preview
+        with:
+          path: ~/.cabal/store
+          key: ${{ matrix.ghc }}-cabal-${{ hashFiles('**/fallible.cabal') }}
+          restore-keys: |
+            ${{ matrix.ghc }}-cabal-
+      - uses: actions/checkout@v2
+      - name: Setup Haskell
+        uses: actions/setup-haskell@v1.1
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: ${{ matrix.cabal }}
+      - name: Build & test
+        run: |
+          cabal v2-build
+          cabal v2-test
