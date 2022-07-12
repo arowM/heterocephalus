@@ -11,13 +11,15 @@ jobs:
         cabal: ['3.2', '3.4', '3.6', 'latest']
     name: Haskell GHC ${{ matrix.ghc }} sample
     steps:
-      - name: Cache .cabal
-        uses: actions/cache@preview
+      - name: Cache Cabal build artifacts
+        uses: actions/cache@v2
         with:
-          path: ~/.cabal/store
-          key: ${{ matrix.ghc }}-cabal-${{ hashFiles('**/fallible.cabal') }}
+          path: |
+            ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ runner.os }}-cabal-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
           restore-keys: |
-            ${{ matrix.ghc }}-cabal-
+            ${{ runner.os }}-cabal-${{ matrix.ghc }}
       - uses: actions/checkout@v3
       - name: Setup Haskell
         uses: haskell/actions/setup@v2
