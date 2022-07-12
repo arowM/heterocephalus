@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/arowM/heterocephalus.svg?branch=master)](https://travis-ci.org/arowM/heterocephalus)
+[![test](https://github.com/arowM/heterocephalus/actions/workflows/test.yaml/badge.svg)](https://github.com/arowM/heterocephalus/actions/workflows/test.yaml)
 [![Hackage](https://img.shields.io/hackage/v/heterocephalus.svg)](https://hackage.haskell.org/package/heterocephalus)
 [![Stackage LTS](http://stackage.org/package/heterocephalus/badge/lts)](http://stackage.org/lts/package/heterocephalus)
 [![Stackage Nightly](http://stackage.org/package/heterocephalus/badge/nightly)](http://stackage.org/nightly/package/heterocephalus)

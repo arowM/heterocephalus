@@ -575,6 +575,7 @@ bindingPattern (BindList is) = do
   return (ListP patterns, concat scopes)
 bindingPattern (BindConstr con is) = do
   (patterns, scopes) <- fmap unzip $ mapM bindingPattern is
+#if MIN_VERSION_template_haskell_compat_v0208(0,1,8)
   {- 
   Todo: Note, the use of conP below (note lowercase 'c') is from the package 'template-haskell-compat-v0208'.
   This allows Heterocephalus to compile with GHC 9.2, as the ConP constructor takes an additional argument in GHC 9.2
@@ -585,6 +586,9 @@ bindingPattern (BindConstr con is) = do
   The github issue relating to this is at https://github.com/arowM/heterocephalus/issues/32
   -}
   return (conP (mkConName con) patterns, concat scopes)
+#else
+  return (ConP (mkConName con) patterns, concat scopes)
+#endif
 bindingPattern (BindRecord con fields wild) = do
   let f (Ident field, b) = do
         (p, s) <- bindingPattern b

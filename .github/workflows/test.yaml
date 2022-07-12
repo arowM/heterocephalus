@@ -1,31 +1,37 @@
 name: test
 on:
-  pull_request:
-    types: [opened, reopened]
+  - pull_request
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        ghc: ['8.10.4', '9.0.2', '9.2.1', '9.2.2']
-        cabal: ['3.2.1.0', '3.4.1.0', '3.6.0.0', '3.6.3.0']
+        ghc: ['8.10.7', '9.0.2', '9.2.2', 'latest']
         os: [ubuntu-latest, macOS-latest, windows-latest]
+        cabal: ['3.4', '3.6', 'latest']
+        exclude:
+          - ghc: 9.2.2
+            cabal: 3.4
+          - ghc: latest
+            cabal: 3.4
     name: Haskell GHC ${{ matrix.ghc }} sample
     steps:
-      - name: Cache .cabal
-        uses: actions/cache@preview
+      - name: Cache Cabal build artifacts
+        uses: actions/cache@v2
         with:
-          path: ~/.cabal/store
-          key: ${{ matrix.ghc }}-cabal-${{ hashFiles('**/fallible.cabal') }}
+          path: |
+            ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ runner.os }}-cabal-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
           restore-keys: |
-            ${{ matrix.ghc }}-cabal-
-      - uses: actions/checkout@v2
+            ${{ runner.os }}-cabal-${{ matrix.ghc }}
+      - uses: actions/checkout@v3
       - name: Setup Haskell
-        uses: actions/setup-haskell@v1.1
+        uses: haskell/actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
       - name: Build & test
         run: |
           cabal v2-build
-          cabal v2-test
+          cabal v2-test --enable-test
