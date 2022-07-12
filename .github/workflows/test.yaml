@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        ghc: ['8.10.4', '9.0.2', '9.2.1', '9.2.2']
+        ghc: ['8.10.7', '9.0.2', '9.2.1', '9.2.2']
         cabal: ['3.2.1.0', '3.4.1.0', '3.6.0.0', '3.6.3.0']
         os: [ubuntu-latest, macOS-latest, windows-latest]
     name: Haskell GHC ${{ matrix.ghc }} sample
