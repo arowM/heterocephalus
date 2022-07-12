@@ -39,7 +39,8 @@ packages:
 - '.'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: []
+extra-deps:
+- template-haskell-compat-v0208-0.1.9@sha256:abba2d89c500b0ad6259f42be07c1a59d331970624de7e0600ba62738e2c0115,1523
 
 # Override default flag values for local packages and extra-deps
 flags: {}

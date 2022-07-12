@@ -575,7 +575,16 @@ bindingPattern (BindList is) = do
   return (ListP patterns, concat scopes)
 bindingPattern (BindConstr con is) = do
   (patterns, scopes) <- fmap unzip $ mapM bindingPattern is
-  return (ConP (mkConName con) patterns, concat scopes)
+  {- 
+  Todo: Note, the use of conP below (note lowercase 'c') is from the package 'template-haskell-compat-v0208'.
+  This allows Heterocephalus to compile with GHC 9.2, as the ConP constructor takes an additional argument in GHC 9.2
+  Note however this _probably_ means there was some new extension or new syntax extension that GHC now allows post GHC 9.2
+  that we are not able to handle. As I (clintonmead@gmail.com) am just writing a PR to the library and don't fully understand it
+  (I'm making this PR just to make our current project build under GHC 9.2) there's probably some more work to be done here.
+
+  The github issue relating to this is at https://github.com/arowM/heterocephalus/issues/32
+  -}
+  return (conP (mkConName con) patterns, concat scopes)
 bindingPattern (BindRecord con fields wild) = do
   let f (Ident field, b) = do
         (p, s) <- bindingPattern b
