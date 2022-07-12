@@ -37,7 +37,7 @@ library
   build-depends:       base >= 4.14.3.0 && < 5
                      , blaze-html >= 0.9.1.2
                      , blaze-markup >= 0.8.2.8
-                     , containers >= 0.6.5.1
+                     , containers >= 0.6.4.1
                      , dlist >= 1.0
                      , mtl >= 2.2.2
                      , parsec >= 3.1.14.0

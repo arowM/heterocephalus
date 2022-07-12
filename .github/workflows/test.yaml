@@ -8,7 +8,12 @@ jobs:
       matrix:
         ghc: ['8.10.7', '9.0.2', '9.2.2', 'latest']
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        cabal: ['3.2', '3.4', '3.6', 'latest']
+        cabal: ['3.4', '3.6', 'latest']
+        exclude:
+          - ghc: 9.2.2
+            cabal: 3.4
+          - ghc: latest
+            cabal: 3.4
     name: Haskell GHC ${{ matrix.ghc }} sample
     steps:
       - name: Cache Cabal build artifacts
@@ -29,4 +34,4 @@ jobs:
       - name: Build & test
         run: |
           cabal v2-build
-          cabal v2-test
+          cabal v2-test --enable-test
